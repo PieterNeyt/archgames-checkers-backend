@@ -1,0 +1,116 @@
+############################################
+# Algemene bestanden
+############################################
+HELP.md
+
+# Logs
+logs/
+*.log
+*.log.*
+*.out
+
+# OS-specifiek
+.DS_Store
+Thumbs.db
+
+############################################
+# Gradle
+############################################
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Gradle caches
+**/build/
+**/out/
+
+############################################
+# Spring Tool Suite (STS)
+############################################
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+############################################
+# IntelliJ IDEA
+############################################
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+############################################
+# NetBeans
+############################################
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+############################################
+# VS Code
+############################################
+.vscode/
+
+############################################
+# Maven
+############################################
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+############################################
+# Lombok
+############################################
+*.lombok
+
+############################################
+# Spring Boot dev files
+############################################
+# Spring Boot devtools restart folder
+spring-devtools.properties
+.restart
+.restarts/
+
+############################################
+# Generated sources
+############################################
+generated/
+generated-sources/
+**/target/
+**/generated/
+
+############################################
+# Jars, Wars, Zips
+############################################
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+############################################
+# Java
+############################################
+*.class
+
+############################################
+# Env & Configuration files
+############################################
+*.env
+*.local.env
+*.properties.local
+application-*.yaml
+application-*.yml
