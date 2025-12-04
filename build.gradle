@@ -8,9 +8,11 @@ group = 'be.kdg.ip3'
 version = '0.0.1-SNAPSHOT'
 description = 'checkers-backend'
 
+def isCI = System.getenv("GITLAB_CI") != null
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(isCI ? 21 : 25)
     }
 }
 
