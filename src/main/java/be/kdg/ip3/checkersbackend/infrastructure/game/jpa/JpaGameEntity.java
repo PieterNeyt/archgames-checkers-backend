@@ -9,6 +9,7 @@ import lombok.Getter;
 
 import java.util.UUID;
 
+
 @Entity
 @Getter
 @Table(name = "game", schema = "checkers")
@@ -17,24 +18,25 @@ public class JpaGameEntity {
     @Id
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID boardId;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "board_id", referencedColumnName = "id")
+    private JpaBoardEntity board;
 
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "type", column = @Column(name = "playerWhite_type")),
-            @AttributeOverride(name = "profileId", column = @Column(name = "playerWhite_profile_id")),
-            @AttributeOverride(name = "color", column = @Column(name = "playerWhite_color")),
-            @AttributeOverride(name = "displayName", column = @Column(name = "playerWhite_display_name"))
+            @AttributeOverride(name = "type", column = @Column(name = "player_white_type")),
+            @AttributeOverride(name = "profileId", column = @Column(name = "player_white_profile_id")),
+            @AttributeOverride(name = "color", column = @Column(name = "player_white_color")),
+            @AttributeOverride(name = "displayName", column = @Column(name = "player_white_display_name"))
     })
     private JpaPlayerEmbeddable playerWhite;
 
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "type", column = @Column(name = "playerBlack_type")),
-            @AttributeOverride(name = "profileId", column = @Column(name = "playerBlack_profile_id")),
-            @AttributeOverride(name = "color", column = @Column(name = "playerBlack_color")),
-            @AttributeOverride(name = "displayName", column = @Column(name = "playerBlack_display_name"))
+            @AttributeOverride(name = "type", column = @Column(name = "player_black_type")),
+            @AttributeOverride(name = "profileId", column = @Column(name = "player_black_profile_id")),
+            @AttributeOverride(name = "color", column = @Column(name = "player_black_color")),
+            @AttributeOverride(name = "displayName", column = @Column(name = "player_black_display_name"))
     })
     private JpaPlayerEmbeddable playerBlack;
 
@@ -48,10 +50,10 @@ public class JpaGameEntity {
 
     public JpaGameEntity() {}
 
-    public JpaGameEntity(UUID id, UUID boardId, JpaPlayerEmbeddable playerWhite,
+    public JpaGameEntity(UUID id, JpaBoardEntity board, JpaPlayerEmbeddable playerWhite,
                          JpaPlayerEmbeddable playerBlack, GameState state, PieceColor currentPlayerColor) {
         this.id = id;
-        this.boardId = boardId;
+        this.board = board;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
         this.state = state;
@@ -59,9 +61,11 @@ public class JpaGameEntity {
     }
 
     public static JpaGameEntity fromDomain(Game game) {
+        JpaBoardEntity boardEntity = JpaBoardEntity.fromDomain(game.getBoard());
+
         return new JpaGameEntity(
                 game.getGameId().id(),
-                game.getBoard().getBoardId().id(),
+                boardEntity,
                 JpaPlayerEmbeddable.fromDomain(game.getPlayerWhite()),
                 JpaPlayerEmbeddable.fromDomain(game.getPlayerBlack()),
                 game.getState(),
@@ -69,14 +73,15 @@ public class JpaGameEntity {
         );
     }
 
-    public Game toDomain(JpaBoardEntity boardEntity) {
+    public Game toDomain() {
         return new Game(
                 new GameId(id),
                 playerWhite.toDomain(),
                 playerBlack.toDomain(),
-                boardEntity.toDomain(),
+                board.toDomain(),
                 state,
                 currentPlayerColor
         );
     }
+
 }

@@ -35,31 +35,4 @@ public class Game {
         this.currentPlayerColor = currentPlayerColor;
     }
 
-    public boolean makeMove(Move move) {
-        return true;
-    }
-
-    public Player getCurrentPlayer() {
-        if (playerWhite.hasColor(currentPlayerColor)) {
-            return playerWhite;
-        }
-        return playerBlack;
-    }
-
-    public Player getPlayerByColor(PieceColor color) {
-        if (playerWhite.hasColor(color)) {
-            return playerWhite;
-        }
-        return playerBlack;
-    }
-
-    public boolean isAiTurn() {
-        return getCurrentPlayer().isAi();
-    }
-
-    public void switchTurn() {
-        this.currentPlayerColor = (currentPlayerColor == PieceColor.WHITE)
-                ? PieceColor.BLACK
-                : PieceColor.WHITE;
-    }
 }

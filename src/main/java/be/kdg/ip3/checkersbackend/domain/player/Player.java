@@ -15,7 +15,7 @@ public class Player {
     private final String displayName;
 
 
-    // Constructor voor echte speler
+    // Constructor voor speler
     public Player(UUID profileId, PieceColor color, String displayName) {
         this.type = PlayerType.HUMAN;
         this.profileId = profileId;
@@ -45,15 +45,4 @@ public class Player {
         return new Player(color);
     }
 
-    public boolean isHuman() {
-        return type == PlayerType.HUMAN;
-    }
-
-    public boolean isAi() {
-        return type == PlayerType.AI;
-    }
-
-    public boolean hasColor(PieceColor color) {
-        return this.color == color;
-    }
 }

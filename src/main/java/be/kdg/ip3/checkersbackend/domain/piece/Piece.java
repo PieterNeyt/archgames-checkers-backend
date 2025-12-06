@@ -22,7 +22,4 @@ public class Piece {
         this.type = type;
     }
 
-    public void makeKing() {
-        this.type = PieceType.KING;
-    }
 }

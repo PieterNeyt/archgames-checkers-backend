@@ -37,7 +37,8 @@ public class Board {
 
     private void setupPieces() {
 
-        for (int i = 0; i < board.length / 2 ; i++) {
+        //black pieces
+        for (int i = 0; i < board.length / 2-1 ; i++) {
             for (int ii = 0; ii < board[i].length; ii++) {
                 if ((i + ii) % 2 != 0) {
                     board[i][ii].placePiece(new Piece(PieceColor.BLACK, PieceType.MAN));
@@ -46,12 +47,12 @@ public class Board {
             }
         }
 
+        // white pieces
         for (int i = board.length / 2+1; i < board.length; i++) {
             for (int ii = 0; ii < board[i].length; ii++) {
-                if ((i + ii) % 2 == 0) {
+                if ((i + ii) % 2 != 0) {
                     board[i][ii].placePiece(new Piece(PieceColor.WHITE, PieceType.MAN));
                 }
-
             }
         }
 

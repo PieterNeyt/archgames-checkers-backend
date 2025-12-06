@@ -31,15 +31,15 @@ public class JpaBoardEntity {
     }
 
     public static JpaBoardEntity fromDomain(Board board) {
-        JpaBoardEntity entity = new JpaBoardEntity();
-        entity.id = board.getBoardId().id();
+        List<JpaSquareEntity> squareEntities = new ArrayList<>();
+        JpaBoardEntity entity = new JpaBoardEntity(board.getBoardId().id(), squareEntities);
 
         for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                Square square = board.getSquare(i, j);
+            for (int ii = 0; ii < 8; ii++) {
+                Square square = board.getSquare(i, ii);
                 JpaSquareEntity squareEntity = JpaSquareEntity.fromDomain(square);
                 squareEntity.setBoard(entity);
-                entity.squares.add(squareEntity);
+                squareEntities.add(squareEntity);
             }
         }
 
@@ -62,8 +62,7 @@ public class JpaBoardEntity {
                         );
             }
         }
-
-        // Pieces toevoegen vanuit database
+        // pieces toevoegen
         for (JpaSquareEntity squareEntity : squares) {
             Square square = squareEntity.toDomain();
             boardArray[square.getRow()][square.getCol()] = square;
