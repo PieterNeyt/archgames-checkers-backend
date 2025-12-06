@@ -46,7 +46,7 @@ test:
 
 package:
   stage: package
-  image: registry.gitlab.com/kdg-ti/integratieproject-j3/teams-25-26/team15/archGames/checkers/checkers-backend/java-docker:latest
+  image: registry.gitlab.com/kdg-ti/integratieproject-j3/teams-25-26/team15/archgames/checkers/checkers-backend/java-docker:latest
   services:
     - docker:27-dind
   variables:
