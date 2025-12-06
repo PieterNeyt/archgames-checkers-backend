@@ -13,7 +13,6 @@ public class Square {
     private Piece piece;
 
 
-
     public Square(int row, int col, SquareColor color) {
         this.row = row;
         this.col = col;
@@ -23,6 +22,7 @@ public class Square {
     public boolean isEmpty() {
         return piece == null;
     }
+
     public void placePiece(Piece piece) {
         this.piece = piece;
     }

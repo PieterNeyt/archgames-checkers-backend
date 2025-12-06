@@ -1,7 +1,8 @@
 package be.kdg.ip3.checkersbackend.domain.game;
 
-import be.kdg.ip3.checkersbackend.domain.Move;
-import be.kdg.ip3.checkersbackend.domain.Player;
+import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
+import be.kdg.ip3.checkersbackend.domain.player.Move;
+import be.kdg.ip3.checkersbackend.domain.player.Player;
 import be.kdg.ip3.checkersbackend.domain.board.Board;
 import lombok.Getter;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -13,26 +14,52 @@ public class Game {
     @Identity
     private final GameId gameId;
     private final Board board;
-    private final Player player1;
-    private final Player player2;
+    private final Player playerWhite;
+    private final Player playerBlack;
     private GameState state;
+    private PieceColor currentPlayerColor;
 
-    public Game(Player player1, Player player2) {
-        this(GameId.create(), player1, player2);
+    public Game(Player playerWhite, Player playerBlack) {
+        this(GameId.create(), playerWhite, playerBlack, new Board(), GameState.IN_PROGRESS, PieceColor.WHITE);
     }
 
-    public Game(GameId gameId, Player player1, Player player2) {
+    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board, GameState state, PieceColor currentPlayerColor) {
+        if (playerWhite.getColor() == playerBlack.getColor()) {
+            throw new IllegalArgumentException("Players must have different colors");
+        }
         this.gameId = gameId;
-        this.board = new Board();
-        this.player1 = player1;
-        this.player2 = player2;
-        this.state = GameState.IN_PROGRESS;
+        this.board = board;
+        this.playerWhite = playerWhite;
+        this.playerBlack = playerBlack;
+        this.state = state;
+        this.currentPlayerColor = currentPlayerColor;
     }
 
     public boolean makeMove(Move move) {
-
         return true;
     }
 
+    public Player getCurrentPlayer() {
+        if (playerWhite.hasColor(currentPlayerColor)) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
 
+    public Player getPlayerByColor(PieceColor color) {
+        if (playerWhite.hasColor(color)) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
+
+    public boolean isAiTurn() {
+        return getCurrentPlayer().isAi();
+    }
+
+    public void switchTurn() {
+        this.currentPlayerColor = (currentPlayerColor == PieceColor.WHITE)
+                ? PieceColor.BLACK
+                : PieceColor.WHITE;
+    }
 }

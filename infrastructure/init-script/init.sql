@@ -1,1 +1,1 @@
-create schema game
+create schema checkers
