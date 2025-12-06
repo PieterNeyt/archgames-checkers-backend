@@ -6,6 +6,7 @@ import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -21,13 +22,17 @@ public class CheckersController {
     @PostMapping("/start-ai")
     public ResponseEntity<GameDto> startGameVsAi() {
         var game = checkersService.startGameVsAi();
-        return ResponseEntity.ok(GameDto.fromDomain(game));
+        return ResponseEntity
+                .created(URI.create("/api/checkers/" + game.getGameId().id()))
+                .body(GameDto.fromDomain(game));
     }
 
     @PostMapping("/start-player")
     public ResponseEntity<GameDto> startGameVsPlayer() {
         var game = checkersService.startGameVsPlayer();
-        return ResponseEntity.ok(GameDto.fromDomain(game));
+        return ResponseEntity
+                .created(URI.create("/api/checkers/" + game.getGameId().id()))
+                .body(GameDto.fromDomain(game));
     }
 
     @GetMapping("/{gameId}")

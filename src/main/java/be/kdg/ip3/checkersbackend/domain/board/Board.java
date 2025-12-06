@@ -1,5 +1,6 @@
 package be.kdg.ip3.checkersbackend.domain.board;
 
+import be.kdg.ip3.checkersbackend.domain.NotFoundException;
 import be.kdg.ip3.checkersbackend.domain.piece.Piece;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceType;
@@ -59,7 +60,15 @@ public class Board {
     }
 
     public Square getSquare(int row, int col) {
-        return board[row][col];
+        if (row < 0 || row >= board.length || col < 0 || col >= board[row].length) {
+            throw new NotFoundException("Square not found at row " + row + ", col " + col);
+        }
+
+        Square square = board[row][col];
+        if (square == null) {
+            throw new NotFoundException("Square not found at row " + row + ", col " + col);
+        }
+        return square;
     }
 
 }

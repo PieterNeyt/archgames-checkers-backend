@@ -13,6 +13,6 @@ public record GameId(UUID id) {
         return new GameId(UUID.randomUUID());
     }
     public NotFoundException notFound() {
-        return new NotFoundException("Profile [" + id + "] not found");
+        return new NotFoundException("Game [" + id + "] not found");
     }
 }
