@@ -1,7 +1,6 @@
 ############################################
 # Algemene bestanden
 ############################################
-HELP.md
 
 # Logs
 logs/
@@ -114,3 +113,5 @@ generated-sources/
 *.properties.local
 application-*.yaml
 application-*.yml
+
+

@@ -1,0 +1,67 @@
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure
+# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
+# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+stages:
+  - compile
+  - test
+  - package
+
+variables:
+  DEFAULT_IMAGE: eclipse-temurin:21-jdk-alpine
+  MAJOR: "1"
+  MINOR: "0"
+
+# TODO cache dependencies in container
+compile:
+  stage: compile
+  image: $DEFAULT_IMAGE
+  script:
+    - ./gradlew compileJava
+    - ./gradlew compileTestJava
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+
+test:
+  stage: test
+  image: $DEFAULT_IMAGE
+  artifacts:
+    reports:
+      junit:
+        - build/test-results/test/TEST-*.xml
+  services:
+    - name: docker:27-dind
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - ./gradlew test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+
+package:
+  stage: package
+  image: registry.gitlab.com/kdg-ti/integratieproject-j3/teams-25-26/team15/ArchGames/Checkers/Checkers-Backend/java-docker:latest
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - DATE=$(date +%Y%m%d)
+    - VERSION="$MAJOR.$MINOR.$DATE-$CI_PIPELINE_ID"
+    - IMAGE=$CI_REGISTRY_IMAGE/backend
+    - echo "Building version $VERSION"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login registry.gitlab.com -u "$CI_REGISTRY_USER" --password-stdin
+    - ./gradlew bootBuildImage --imageName=$IMAGE:$VERSION
+    - docker tag $IMAGE:$VERSION $IMAGE:latest
+    - docker push $IMAGE:$VERSION
+    - docker push $IMAGE:latest
+  rules:
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"
+
