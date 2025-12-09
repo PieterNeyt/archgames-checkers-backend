@@ -53,7 +53,7 @@ public class CheckersController {
         var moves = checkersService.getValidMoves(new GameId(gameId), row, col);
         var moveDtos = moves.stream()
                 .map(MoveDto::fromDomain)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(moveDtos);
     }
 

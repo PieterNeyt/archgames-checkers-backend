@@ -27,7 +27,7 @@ public record GameDto(
                 game.getCurrentPlayerColor(),
                 game.getPlayablePieces().stream()
                         .map(PositionDto::fromDomain)
-                        .collect(Collectors.toList())
+                        .toList()
         );
     }
 }

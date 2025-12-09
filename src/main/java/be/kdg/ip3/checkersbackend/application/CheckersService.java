@@ -23,6 +23,7 @@ public class CheckersService {
     }
 
     public Game startGameVsAi() {
+        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
         var tempPlayerId = UUID.randomUUID();
         var humanPlayer = Player.createHumanPlayer(tempPlayerId, PieceColor.WHITE, "Player");
         var aiPlayer = Player.createAiPlayer(PieceColor.BLACK);
@@ -34,6 +35,7 @@ public class CheckersService {
     }
 
     public Game startGameVsPlayer() {
+        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
         var playerWhite = UUID.randomUUID();
         var playerBlack = UUID.randomUUID();
         var player1 = Player.createHumanPlayer(playerWhite, PieceColor.WHITE, "Player 1");

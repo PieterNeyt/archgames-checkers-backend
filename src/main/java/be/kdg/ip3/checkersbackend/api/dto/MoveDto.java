@@ -16,7 +16,7 @@ public record MoveDto(
     public static MoveDto fromDomain(Move move) {
         List<PositionDto> positions = move.getCapturedPositions().stream()
                 .map(PositionDto::fromDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return new MoveDto(
                 move.getFromRow(),

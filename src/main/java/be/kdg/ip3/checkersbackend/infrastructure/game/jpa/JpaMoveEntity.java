@@ -70,7 +70,7 @@ public class JpaMoveEntity {
     public static JpaMoveEntity fromDomain(Move move) {
         List<JpaPositionEmbeddable> positions = move.getCapturedPositions().stream()
                 .map(JpaPositionEmbeddable::fromDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return new JpaMoveEntity(
                 move.getFromRow(),
@@ -87,7 +87,7 @@ public class JpaMoveEntity {
     public Move toDomain() {
         List<Position> positions = capturedPositions.stream()
                 .map(JpaPositionEmbeddable::toDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return new Move(fromRow, fromCol, toRow, toCol, positions, playerColor);
     }

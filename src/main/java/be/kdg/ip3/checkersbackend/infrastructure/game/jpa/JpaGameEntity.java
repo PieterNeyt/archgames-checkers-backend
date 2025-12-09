@@ -82,8 +82,7 @@ public class JpaGameEntity {
     public static JpaGameEntity fromDomain(Game game) {
 
         List<JpaMoveEntity> jpaMoves = game.getMoves().stream()
-                .map(JpaMoveEntity::fromDomain)
-                .collect(Collectors.toList());
+                .map(JpaMoveEntity::fromDomain).toList();
 
         return new JpaGameEntity(
                 game.getGameId().id(),
