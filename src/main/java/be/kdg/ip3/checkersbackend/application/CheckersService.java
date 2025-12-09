@@ -4,10 +4,12 @@ import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
+import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -21,7 +23,6 @@ public class CheckersService {
     }
 
     public Game startGameVsAi() {
-        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
         var tempPlayerId = UUID.randomUUID();
         var humanPlayer = Player.createHumanPlayer(tempPlayerId, PieceColor.WHITE, "Player");
         var aiPlayer = Player.createAiPlayer(PieceColor.BLACK);
@@ -33,7 +34,6 @@ public class CheckersService {
     }
 
     public Game startGameVsPlayer() {
-        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
         var playerWhite = UUID.randomUUID();
         var playerBlack = UUID.randomUUID();
         var player1 = Player.createHumanPlayer(playerWhite, PieceColor.WHITE, "Player 1");
@@ -50,5 +50,15 @@ public class CheckersService {
                 .orElseThrow(gameId::notFound);
     }
 
+    public List<Move> getValidMoves(GameId gameId, int row, int col) {
+        var game = getGame(gameId);
+        return game.getValidMovesForPiece(row, col);
+    }
 
+    public Game makeMove(GameId gameId, int fromRow, int fromCol, int toRow, int toCol) {
+        var game = getGame(gameId);
+        game.makeMove(fromRow, fromCol, toRow, toCol);
+        gameRepository.save(game);
+        return game;
+    }
 }

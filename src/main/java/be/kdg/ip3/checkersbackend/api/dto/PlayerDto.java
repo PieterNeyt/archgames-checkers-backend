@@ -14,10 +14,10 @@ public record PlayerDto(
 ) {
     public static PlayerDto fromDomain(Player player) {
         return new PlayerDto(
-                player.getType(),
-                player.getProfileId(),
-                player.getColor(),
-                player.getDisplayName()
+                player.type(),
+                player.profileId(),
+                player.color(),
+                player.displayName()
         );
     }
 }

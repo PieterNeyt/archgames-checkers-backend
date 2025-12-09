@@ -26,5 +26,8 @@ public class Square {
     public void placePiece(Piece piece) {
         this.piece = piece;
     }
+    public void removePiece() {
+        this.piece = null;
+    }
 
 }

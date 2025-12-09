@@ -1,14 +1,9 @@
 package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
 
-
-
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
 import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.util.UUID;
@@ -33,7 +28,8 @@ public class JpaPlayerEmbeddable {
 
     public JpaPlayerEmbeddable() {}
 
-    public JpaPlayerEmbeddable(PlayerType type, UUID profileId, PieceColor color, String displayName) {
+    public JpaPlayerEmbeddable(PlayerType type, UUID profileId,
+                               PieceColor color, String displayName) {
         this.type = type;
         this.profileId = profileId;
         this.color = color;
@@ -42,18 +38,19 @@ public class JpaPlayerEmbeddable {
 
     public static JpaPlayerEmbeddable fromDomain(Player player) {
         return new JpaPlayerEmbeddable(
-                player.getType(),
-                player.getProfileId(),
-                player.getColor(),
-                player.getDisplayName()
+                player.type(),
+                player.profileId(),
+                player.color(),
+                player.displayName()
         );
     }
 
     public Player toDomain() {
-        if (type == PlayerType.HUMAN) {
-            return Player.createHumanPlayer(profileId, color, displayName);
-        } else {
-            return Player.createAiPlayer(color);
-        }
+        return new Player(
+                type,
+                profileId,
+                color,
+                displayName
+        );
     }
 }

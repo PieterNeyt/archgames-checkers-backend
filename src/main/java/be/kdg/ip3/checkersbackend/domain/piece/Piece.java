@@ -22,4 +22,14 @@ public class Piece {
         this.type = type;
     }
 
+    public void promoteToKing() {
+        if (this.type == PieceType.MAN) {
+            this.type = PieceType.KING;
+        }
+    }
+
+    public boolean isKing() {
+        return this.type == PieceType.KING;
+    }
+
 }
