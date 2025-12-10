@@ -37,9 +37,9 @@ public class JpaPieceEntity {
 
     public static JpaPieceEntity fromDomain(Piece piece) {
         return new JpaPieceEntity(
-                piece.getPieceId().id(),
-                piece.getColor(),
-                piece.getType()
+                piece.pieceId().id(),
+                piece.color(),
+                piece.type()
         );
     }
 

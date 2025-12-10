@@ -1,6 +1,5 @@
 package be.kdg.ip3.checkersbackend.domain.player;
 
-import lombok.Getter;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 

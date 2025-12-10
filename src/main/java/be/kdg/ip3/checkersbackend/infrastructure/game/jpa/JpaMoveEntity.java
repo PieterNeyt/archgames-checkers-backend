@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -68,27 +67,37 @@ public class JpaMoveEntity {
     }
 
     public static JpaMoveEntity fromDomain(Move move) {
-        List<JpaPositionEmbeddable> positions = move.getCapturedPositions().stream()
+
+        var positions = move.capturedPositions().stream()
                 .map(JpaPositionEmbeddable::fromDomain)
                 .toList();
 
         return new JpaMoveEntity(
-                move.getFromRow(),
-                move.getFromCol(),
-                move.getToRow(),
-                move.getToCol(),
+                move.fromRow(),
+                move.fromCol(),
+                move.toRow(),
+                move.toCol(),
                 move.isJump(),
-                move.getTimestamp(),
+                move.timestamp(),
                 positions,
-                move.getPlayerColor()
+                move.playerColor()
         );
     }
 
     public Move toDomain() {
-        List<Position> positions = capturedPositions.stream()
+        var positions = capturedPositions.stream()
                 .map(JpaPositionEmbeddable::toDomain)
                 .toList();
 
-        return new Move(fromRow, fromCol, toRow, toCol, positions, playerColor);
+        return new Move(
+                fromRow,
+                fromCol,
+                toRow,
+                toCol,
+                positions,
+                timestamp,
+                isJump,
+                playerColor
+        );
     }
 }

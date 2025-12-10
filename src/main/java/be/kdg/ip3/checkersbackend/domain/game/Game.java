@@ -1,9 +1,9 @@
 package be.kdg.ip3.checkersbackend.domain.game;
 
+import be.kdg.ip3.checkersbackend.domain.board.Board;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
-import be.kdg.ip3.checkersbackend.domain.board.Board;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import lombok.Getter;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -17,7 +17,8 @@ import java.util.List;
 public class Game {
     @Identity
     private final GameId gameId;
-    private final Board board;
+
+    private Board board;
     private final Player playerWhite;
     private final Player playerBlack;
     private GameState state;
@@ -42,7 +43,6 @@ public class Game {
         this.moves = new ArrayList<>(moves);
     }
 
-
     public List<Position> getPlayablePieces() {
         return board.getPiecesWithValidMoves(currentPlayerColor);
     }
@@ -53,7 +53,6 @@ public class Game {
         }
 
         var pieceMoves = board.getValidMoves(row, col, currentPlayerColor);
-
         var mandatoryJumpExists = board.hasJumpsAvailable(currentPlayerColor);
 
         if (mandatoryJumpExists) {
@@ -73,21 +72,21 @@ public class Game {
         var validMoves = getValidMovesForPiece(fromRow, fromCol);
 
         var requestedMove = validMoves.stream()
-                .filter(m -> m.getToRow() == toRow && m.getToCol() == toCol)
+                .filter(m -> m.toRow() == toRow && m.toCol() == toCol)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid move or capture mandatory"));
 
+        var result = board.executeMove(requestedMove);
 
-        var executedMove = board.executeMove(requestedMove, getCurrentPlayerColor());
+        this.board = result.newBoard();
+        this.moves.add(result.executedMove());
 
-        this.moves.add(executedMove);
-
-
-        if (executedMove.isJump()) {
-            var additionalJumps = board.getValidJumps(toRow, toCol, board.getSquare(toRow, toCol).getPiece(), currentPlayerColor);
+        if (result.executedMove().isJump()) {
+            var pieceAtDest = this.board.getSquare(toRow, toCol).piece();
+            var additionalJumps = this.board.getValidJumps(toRow, toCol, pieceAtDest, currentPlayerColor);
 
             if (!additionalJumps.isEmpty()) {
-                return; // zodat speler opnieuw kan spelen
+                return;
             }
         }
 
@@ -103,13 +102,11 @@ public class Game {
         }
     }
 
-
     private void checkGameOver() {
+        var otherPlayerColor = (currentPlayerColor == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
 
-        PieceColor otherPlayerColor = (currentPlayerColor == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
-
-        boolean currentPlayerHasMoves = board.hasMovesAvailable(currentPlayerColor);
-        boolean otherPlayerHasMoves = board.hasMovesAvailable(otherPlayerColor);
+        var currentPlayerHasMoves = board.hasMovesAvailable(currentPlayerColor);
+        var otherPlayerHasMoves = board.hasMovesAvailable(otherPlayerColor);
 
         if (!currentPlayerHasMoves && !otherPlayerHasMoves) {
             state = GameState.DRAW;
@@ -117,6 +114,4 @@ public class Game {
             state = (otherPlayerColor == PieceColor.WHITE) ? GameState.WHITE_WON : GameState.BLACK_WON;
         }
     }
-
-
 }

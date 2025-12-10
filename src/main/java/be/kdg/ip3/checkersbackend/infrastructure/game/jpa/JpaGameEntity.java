@@ -81,7 +81,7 @@ public class JpaGameEntity {
 
     public static JpaGameEntity fromDomain(Game game) {
 
-        List<JpaMoveEntity> jpaMoves = game.getMoves().stream()
+        var jpaMoves = game.getMoves().stream()
                 .map(JpaMoveEntity::fromDomain).toList();
 
         return new JpaGameEntity(
@@ -96,12 +96,12 @@ public class JpaGameEntity {
     }
 
     public Game toDomain() {
-        List<Move> domainMoves = moves.stream()
+        var domainMoves = moves.stream()
                 .map(JpaMoveEntity::toDomain)
                 .collect(Collectors.toList());
 
-        Player white = playerWhite.toDomain();
-        Player black = playerBlack.toDomain();
+        var white = playerWhite.toDomain();
+        var black = playerBlack.toDomain();
 
         return new Game(
                 new GameId(id),

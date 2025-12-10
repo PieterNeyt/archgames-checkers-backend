@@ -2,6 +2,7 @@ package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
 
 import be.kdg.ip3.checkersbackend.domain.board.Square;
 import be.kdg.ip3.checkersbackend.domain.board.SquareColor;
+import be.kdg.ip3.checkersbackend.domain.piece.Piece;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,21 +48,19 @@ public class JpaSquareEntity {
     }
 
     public static JpaSquareEntity fromDomain(Square square) {
-        JpaPieceEntity pieceEntity = square.isEmpty() ? null : JpaPieceEntity.fromDomain(square.getPiece());
+        var pieceEntity = square.isEmpty() ? null : JpaPieceEntity.fromDomain(square.piece());
 
         return new JpaSquareEntity(
-                square.getRow(),
-                square.getCol(),
-                square.getColor(),
+                square.row(),
+                square.col(),
+                square.color(),
                 pieceEntity
         );
     }
 
     public Square toDomain() {
-        Square square = new Square(row, col, color);
-        if (piece != null) {
-            square.placePiece(piece.toDomain());
-        }
-        return square;
+        var domainPiece = (piece != null) ? piece.toDomain() : null;
+
+        return new Square(row, col, color, domainPiece);
     }
 }

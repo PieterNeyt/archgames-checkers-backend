@@ -35,12 +35,13 @@ public class JpaBoardEntity {
 
     public static JpaBoardEntity fromDomain(Board board) {
         List<JpaSquareEntity> squareEntities = new ArrayList<>();
-        JpaBoardEntity entity = new JpaBoardEntity(board.getBoardId().id(), squareEntities);
+
+        var entity = new JpaBoardEntity(board.getBoardId().id(), squareEntities);
 
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
-                Square s = board.getSquare(r, c);
-                JpaSquareEntity sq = JpaSquareEntity.fromDomain(s);
+                var s = board.getSquare(r, c);
+                var sq = JpaSquareEntity.fromDomain(s);
                 sq.setBoard(entity);
                 squareEntities.add(sq);
             }
@@ -65,8 +66,8 @@ public class JpaBoardEntity {
 
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
-                Square domainSquare = domain.getSquare(r, c);
-                JpaSquareEntity targetSq = squareByPos.get(r + "-" + c);
+                var domainSquare = domain.getSquare(r, c);
+                var targetSq = squareByPos.get(r + "-" + c);
 
                 if (targetSq == null) {
                     continue;
@@ -77,15 +78,16 @@ public class JpaBoardEntity {
                         targetSq.setPiece(null);
                     }
                 } else {
-                    Piece dp = domainSquare.getPiece();
-                    UUID pieceId = dp.getPieceId().id();
 
-                    JpaPieceEntity managedPiece = existingPieceById.get(pieceId);
+                    var dp = domainSquare.piece();
+                    var pieceId = dp.pieceId().id();
+
+                    var managedPiece = existingPieceById.get(pieceId);
 
                     if (managedPiece != null) {
-                        managedPiece.setType(dp.getType());
+                        managedPiece.setType(dp.type());
 
-                        JpaSquareEntity oldOwner = pieceOwnerSquare.get(pieceId);
+                        var oldOwner = pieceOwnerSquare.get(pieceId);
                         if (oldOwner != null && oldOwner != targetSq) {
                             oldOwner.setPiece(null);
                             pieceOwnerSquare.put(pieceId, targetSq);
@@ -93,7 +95,7 @@ public class JpaBoardEntity {
 
                         targetSq.setPiece(managedPiece);
                     } else {
-                        JpaPieceEntity newPiece = JpaPieceEntity.fromDomain(dp);
+                        var newPiece = JpaPieceEntity.fromDomain(dp);
                         targetSq.setPiece(newPiece);
 
                         existingPieceById.put(pieceId, newPiece);
@@ -105,15 +107,18 @@ public class JpaBoardEntity {
     }
 
     public Board toDomain() {
-        Square[][] arr = new Square[8][8];
-        for (int r = 0; r < 8; r++)
-            for (int c = 0; c < 8; c++)
-                arr[r][c] = new Square(r, c,
-                        ((r + c) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN);
+        var arr = new Square[8][8];
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                var color = ((r + c) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN;
+                arr[r][c] = new Square(r, c, color, null);
+            }
+        }
 
         for (JpaSquareEntity s : squares) {
-            Square sq = s.toDomain();
-            arr[sq.getRow()][sq.getCol()] = sq;
+            var sq = s.toDomain();
+            arr[sq.row()][sq.col()] = sq;
         }
 
         return new Board(new BoardId(id), arr);

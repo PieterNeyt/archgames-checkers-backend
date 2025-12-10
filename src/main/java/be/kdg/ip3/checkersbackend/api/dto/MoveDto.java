@@ -3,7 +3,6 @@ package be.kdg.ip3.checkersbackend.api.dto;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public record MoveDto(
         int fromRow,
@@ -14,15 +13,15 @@ public record MoveDto(
         List<PositionDto> capturedPositions
 ) {
     public static MoveDto fromDomain(Move move) {
-        List<PositionDto> positions = move.getCapturedPositions().stream()
+        List<PositionDto> positions = move.capturedPositions().stream()
                 .map(PositionDto::fromDomain)
                 .toList();
 
         return new MoveDto(
-                move.getFromRow(),
-                move.getFromCol(),
-                move.getToRow(),
-                move.getToCol(),
+                move.fromRow(),
+                move.fromCol(),
+                move.toRow(),
+                move.toCol(),
                 move.isJump(),
                 positions
         );

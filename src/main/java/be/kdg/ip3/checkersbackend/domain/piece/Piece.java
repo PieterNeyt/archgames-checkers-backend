@@ -1,35 +1,22 @@
 package be.kdg.ip3.checkersbackend.domain.piece;
 
-import lombok.Getter;
-import org.jmolecules.ddd.annotation.Entity;
-import org.jmolecules.ddd.annotation.Identity;
+import org.jmolecules.ddd.annotation.ValueObject;
 
-@Getter
-@Entity
-public class Piece {
-    @Identity
-    private final PieceId pieceId;
-    private final PieceColor color;
-    private PieceType type;
+@ValueObject
+public record Piece(PieceId pieceId, PieceColor color, PieceType type) {
 
     public Piece(PieceColor color, PieceType type) {
         this(PieceId.create(), color, type);
     }
 
-    public Piece(PieceId id, PieceColor color, PieceType type) {
-        this.pieceId = id;
-        this.color = color;
-        this.type = type;
-    }
-
-    public void promoteToKing() {
-        if (this.type == PieceType.MAN) {
-            this.type = PieceType.KING;
+    public Piece promoted() {
+        if (this.type == PieceType.KING) {
+            return this;
         }
+        return new Piece(this.pieceId, this.color, PieceType.KING);
     }
 
     public boolean isKing() {
         return this.type == PieceType.KING;
     }
-
 }

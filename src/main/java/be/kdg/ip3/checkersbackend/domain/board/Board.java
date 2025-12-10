@@ -7,68 +7,95 @@ import be.kdg.ip3.checkersbackend.domain.piece.PieceType;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import lombok.Getter;
-import org.jmolecules.ddd.annotation.Entity;
-import org.jmolecules.ddd.annotation.Identity;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
-@Entity
+@ValueObject
 public class Board {
-    @Identity
     private final BoardId boardId;
-    private final Square[][] board;
+    private final Square[][] squares;
 
     public Board() {
-        this(BoardId.create(), new Square[8][8]);
-        initializeBoard();
+        this(BoardId.create(), initializeBoard());
     }
 
-    public Board(BoardId boardId, Square[][] board) {
+    public Board(BoardId boardId, Square[][] squares) {
         this.boardId = boardId;
-        this.board = board;
+        this.squares = squares;
     }
 
-    private void initializeBoard() {
-        for (int i = 0; i < board.length; i++) {
-            for (int ii = 0; ii < board[i].length; ii++) {
-                board[i][ii] = new Square(i, ii, ((i + ii) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN);
+    private static Square[][] initializeBoard() {
+        var grid = new Square[8][8];
+        for (int i = 0; i < 8; i++) {
+            for (int ii = 0; ii < 8; ii++) {
+                grid[i][ii] = new Square(i, ii, ((i + ii) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN);
             }
         }
-        setupPieces();
+        setupPieces(grid);
+        return grid;
     }
 
-    private void setupPieces() {
-        // Black pieces
-        for (int i = 0; i < board.length / 2 - 1; i++) {
-            for (int ii = 0; ii < board[i].length; ii++) {
+    private static void setupPieces(Square[][] grid) {
+        for (int i = 0; i < 3; i++) {
+            for (int ii = 0; ii < 8; ii++) {
                 if ((i + ii) % 2 != 0) {
-                    board[i][ii].placePiece(new Piece(PieceColor.BLACK, PieceType.MAN));
+                    grid[i][ii] = grid[i][ii].withPiece(new Piece(PieceColor.BLACK, PieceType.MAN));
                 }
             }
         }
-
-        // White pieces
-        for (int i = board.length / 2 + 1; i < board.length; i++) {
-            for (int ii = 0; ii < board[i].length; ii++) {
+        for (int i = 5; i < 8; i++) {
+            for (int ii = 0; ii < 8; ii++) {
                 if ((i + ii) % 2 != 0) {
-                    board[i][ii].placePiece(new Piece(PieceColor.WHITE, PieceType.MAN));
+                    grid[i][ii] = grid[i][ii].withPiece(new Piece(PieceColor.WHITE, PieceType.MAN));
                 }
             }
         }
     }
 
     public Square getSquare(int row, int col) {
-        if (row < 0 || row >= board.length || col < 0 || col >= board[row].length) {
+        if (!isValidPosition(row, col)) {
             throw new NotFoundException("Square not found at row " + row + ", col " + col);
+        }
+        return squares[row][col];
+    }
+
+    public MoveResult executeMove(Move move) {
+
+        var fromSquare = getSquare(move.fromRow(), move.fromCol());
+
+        if (fromSquare.isEmpty()) {
+            throw new IllegalArgumentException("No piece at start position");
         }
 
-        Square square = board[row][col];
-        if (square == null) {
-            throw new NotFoundException("Square not found at row " + row + ", col " + col);
+        var newGrid = copyGrid(this.squares);
+        var piece = fromSquare.piece();
+
+        for (Position capturedPos : move.capturedPositions()) {
+            var capSq = newGrid[capturedPos.row()][capturedPos.col()];
+            newGrid[capturedPos.row()][capturedPos.col()] = capSq.emptied();
         }
-        return square;
+
+        newGrid[move.fromRow()][move.fromCol()] = newGrid[move.fromRow()][move.fromCol()].emptied();
+
+        if (shouldPromote(piece, move.toRow())) {
+            piece = piece.promoted();
+        }
+
+        newGrid[move.toRow()][move.toCol()] = newGrid[move.toRow()][move.toCol()].withPiece(piece);
+
+        return new MoveResult(new Board(this.boardId, newGrid), move);
+    }
+
+    private Square[][] copyGrid(Square[][] source) {
+        Square[][] dest = new Square[8][];
+        for (int i = 0; i < 8; i++) {
+            dest[i] = Arrays.copyOf(source[i], 8);
+        }
+        return dest;
     }
 
     public List<Move> getValidMoves(int row, int col, PieceColor currentPlayerColor) {
@@ -78,8 +105,8 @@ public class Board {
             return new ArrayList<>();
         }
 
-        var piece = fromSquare.getPiece();
-        if (piece.getColor() != currentPlayerColor) {
+        var piece = fromSquare.piece();
+        if (piece.color() != currentPlayerColor) {
             return new ArrayList<>();
         }
 
@@ -88,23 +115,19 @@ public class Board {
             return jumps;
         }
 
-        return getValidSimpleMoves(row, col, piece,currentPlayerColor);
+        return getValidSimpleMoves(row, col, piece, currentPlayerColor);
     }
 
-
-    //  Geeft lijst van posities van stukken die op dit moment een geldige zet kunnen doen.
     public List<Position> getPiecesWithValidMoves(PieceColor color) {
         List<Position> positions = new ArrayList<>();
-        //om te kijken of er geslagen kan worden
         var mustJump = hasJumpsAvailable(color);
 
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 var square = getSquare(row, col);
-                if (!square.isEmpty() && square.getPiece().getColor() == color) {
+                if (!square.isEmpty() && square.piece().color() == color) {
                     if (mustJump) {
-                        // Als er gesprongen moet worden
-                        if (!getValidJumps(row, col, square.getPiece(),color).isEmpty()) {
+                        if (!getValidJumps(row, col, square.piece(), color).isEmpty()) {
                             positions.add(new Position(row, col));
                         }
                     } else {
@@ -119,19 +142,15 @@ public class Board {
     }
 
     private int[] getMoveDirections(Piece piece) {
-
-        //koning mag achterwaards
         if (piece.isKing()) {
             return new int[]{-1, 1};
         }
-
-        if (piece.getColor() == PieceColor.WHITE) {
-            return new int[]{-1}; // Wit gaat naar boven op het bord
+        if (piece.color() == PieceColor.WHITE) {
+            return new int[]{-1};
         } else {
-            return new int[]{1}; // Zwart gaat naar beneden op het bord
+            return new int[]{1};
         }
     }
-
 
     private List<Move> getValidSimpleMoves(int row, int col, Piece piece, PieceColor currentPlayerColor) {
         List<Move> moves = new ArrayList<>();
@@ -147,7 +166,6 @@ public class Board {
                 }
             }
         }
-
         return moves;
     }
 
@@ -167,11 +185,10 @@ public class Board {
                 }
             }
         }
-
         return jumps;
     }
 
-    private boolean isValidJump( int toRow, int toCol, int captureRow, int captureCol, Piece piece) {
+    private boolean isValidJump(int toRow, int toCol, int captureRow, int captureCol, Piece piece) {
         if (!isValidPosition(toRow, toCol) || !isValidPosition(captureRow, captureCol)) {
             return false;
         }
@@ -179,16 +196,14 @@ public class Board {
         var targetSquare = getSquare(toRow, toCol);
         var captureSquare = getSquare(captureRow, captureCol);
 
-        return targetSquare.isEmpty()
-                && !captureSquare.isEmpty()
-                && captureSquare.getPiece().getColor() != piece.getColor();
+        return targetSquare.isEmpty() && !captureSquare.isEmpty() && captureSquare.piece().color() != piece.color();
     }
 
     public boolean hasJumpsAvailable(PieceColor color) {
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 var square = getSquare(row, col);
-                if (!square.isEmpty() && square.getPiece().getColor() == color && !getValidJumps(row, col, square.getPiece(), color).isEmpty()) {
+                if (!square.isEmpty() && square.piece().color() == color && !getValidJumps(row, col, square.piece(), color).isEmpty()) {
                     return true;
                 }
             }
@@ -196,36 +211,11 @@ public class Board {
         return false;
     }
 
-    public Move executeMove(Move move, PieceColor currentPlayerColor) {
-        var fromSquare = getSquare(move.getFromRow(), move.getFromCol());
-        var toSquare = getSquare(move.getToRow(), move.getToCol());
-
-        if (fromSquare.isEmpty()) {
-            throw new IllegalArgumentException("No piece at start position");
-        }
-
-        var piece = fromSquare.getPiece();
-
-        // verwijder de gevangen stukken
-        for (Position capturedPos : move.getCapturedPositions()) {
-            getSquare(capturedPos.row(), capturedPos.col()).removePiece();
-        }
-
-        fromSquare.removePiece();
-        toSquare.placePiece(piece);
-
-        if (shouldPromote(piece, move.getToRow())) {
-            piece.promoteToKing();
-        }
-        move.playedBy(currentPlayerColor);
-        return move;
-    }
-
     private boolean shouldPromote(Piece piece, int row) {
         if (piece.isKing()) {
             return false;
         }
-        return (piece.getColor() == PieceColor.WHITE && row == 0) || (piece.getColor() == PieceColor.BLACK && row == 7);
+        return (piece.color() == PieceColor.WHITE && row == 0) || (piece.color() == PieceColor.BLACK && row == 7);
     }
 
     private boolean isValidPosition(int row, int col) {
@@ -236,7 +226,7 @@ public class Board {
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 var square = getSquare(row, col);
-                if (!square.isEmpty() && square.getPiece().getColor() == color) {
+                if (!square.isEmpty() && square.piece().color() == color) {
                     if (!getValidMoves(row, col, color).isEmpty()) {
                         return true;
                     }
