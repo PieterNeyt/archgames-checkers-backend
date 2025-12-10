@@ -2,7 +2,6 @@ package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
 
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
-import be.kdg.ip3.checkersbackend.domain.player.Position;
 import jakarta.persistence.*;
 import lombok.Getter;
 
