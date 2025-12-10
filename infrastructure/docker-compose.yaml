@@ -12,5 +12,6 @@ services:
       POSTGRES_DB: checkersDb
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
+      - ./init-scripts/sql:/docker-entrypoint-initdb.d/
     ports:
       - "5445:5432"

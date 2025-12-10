@@ -10,7 +10,6 @@ import lombok.Getter;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Getter
@@ -18,8 +17,8 @@ import java.util.List;
 public class Board {
     private final BoardId boardId;
     private final Square[][] squares;
-    private static final int BOARD_WIDTH = 8;
-    private static final int BOARD_HEIGHT = 8;
+    private static final int BOARD_SIZE = 8;
+
 
     public Board() {
         this(BoardId.create(), initializeBoard());
@@ -32,7 +31,7 @@ public class Board {
     }
 
     private static Square[][] initializeBoard() {
-        var grid = new Square[BOARD_WIDTH][BOARD_HEIGHT];
+        var grid = new Square[BOARD_SIZE][BOARD_SIZE];
         for (int i = 0; i < 8; i++) {
             for (int ii = 0; ii < 8; ii++) {
                 grid[i][ii] = new Square(i, ii, ((i + ii) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN);
@@ -96,7 +95,7 @@ public class Board {
     }
 
     private Square[][] copyGrid(Square[][] source) {
-        var dest = new Square[BOARD_WIDTH][];
+        var dest = new Square[BOARD_SIZE][];
         for (int i = 0; i < 8; i++) {
             dest[i] = new Square[8];
             System.arraycopy(source[i], 0, dest[i], 0, 8);
