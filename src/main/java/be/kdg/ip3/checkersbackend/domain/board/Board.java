@@ -18,6 +18,8 @@ import java.util.List;
 public class Board {
     private final BoardId boardId;
     private final Square[][] squares;
+    private static final int BOARD_WIDTH = 8;
+    private static final int BOARD_HEIGHT = 8;
 
     public Board() {
         this(BoardId.create(), initializeBoard());
@@ -26,10 +28,11 @@ public class Board {
     public Board(BoardId boardId, Square[][] squares) {
         this.boardId = boardId;
         this.squares = squares;
+
     }
 
     private static Square[][] initializeBoard() {
-        var grid = new Square[8][8];
+        var grid = new Square[BOARD_WIDTH][BOARD_HEIGHT];
         for (int i = 0; i < 8; i++) {
             for (int ii = 0; ii < 8; ii++) {
                 grid[i][ii] = new Square(i, ii, ((i + ii) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN);
@@ -40,20 +43,22 @@ public class Board {
     }
 
     private static void setupPieces(Square[][] grid) {
-        for (int i = 0; i < 3; i++) {
-            for (int ii = 0; ii < 8; ii++) {
-                if ((i + ii) % 2 != 0) {
-                    grid[i][ii] = grid[i][ii].withPiece(new Piece(PieceColor.BLACK, PieceType.MAN));
+        placePiecesForColor(grid, 0, 3, PieceColor.BLACK);
+        placePiecesForColor(grid, 5, 8, PieceColor.WHITE);
+    }
+
+    private static void placePiecesForColor(Square[][] grid, int startRow, int endRow, PieceColor color) {
+        for (int row = startRow; row < endRow; row++) {
+            for (int col = 0; col < 8; col++) {
+                if (isDarkSquare(row, col)) {
+                    grid[row][col] = grid[row][col].withPiece(new Piece(color, PieceType.MAN));
                 }
             }
         }
-        for (int i = 5; i < 8; i++) {
-            for (int ii = 0; ii < 8; ii++) {
-                if ((i + ii) % 2 != 0) {
-                    grid[i][ii] = grid[i][ii].withPiece(new Piece(PieceColor.WHITE, PieceType.MAN));
-                }
-            }
-        }
+    }
+
+    private static boolean isDarkSquare(int row, int col) {
+        return (row + col) % 2 != 0;
     }
 
     public Square getSquare(int row, int col) {
@@ -91,7 +96,7 @@ public class Board {
     }
 
     private Square[][] copyGrid(Square[][] source) {
-        Square[][] dest = new Square[8][];
+        var dest = new Square[BOARD_WIDTH][];
         for (int i = 0; i < 8; i++) {
             dest[i] = Arrays.copyOf(source[i], 8);
         }
@@ -124,21 +129,27 @@ public class Board {
 
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
-                var square = getSquare(row, col);
-                if (!square.isEmpty() && square.piece().color() == color) {
-                    if (mustJump) {
-                        if (!getValidJumps(row, col, square.piece(), color).isEmpty()) {
-                            positions.add(new Position(row, col));
-                        }
-                    } else {
-                        if (!getValidMoves(row, col, color).isEmpty()) {
-                            positions.add(new Position(row, col));
-                        }
-                    }
+                if (hasPieceOfColor(row, col, color) && hasValidMovesAt(row, col, color, mustJump)) {
+                    positions.add(new Position(row, col));
                 }
             }
         }
         return positions;
+    }
+
+    private boolean hasPieceOfColor(int row, int col, PieceColor color) {
+        var square = getSquare(row, col);
+        return !square.isEmpty() && square.piece().color() == color;
+    }
+
+    private boolean hasValidMovesAt(int row, int col, PieceColor color, boolean mustJump) {
+        var square = getSquare(row, col);
+        var piece = square.piece();
+
+        if (mustJump) {
+            return !getValidJumps(row, col, piece, color).isEmpty();
+        }
+        return !getValidMoves(row, col, color).isEmpty();
     }
 
     private int[] getMoveDirections(Piece piece) {

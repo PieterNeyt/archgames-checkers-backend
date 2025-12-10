@@ -42,7 +42,7 @@ public class CheckersServiceSociableTest {
 
         @Test
         void startGameVsAi_createsGameAndSaves() {
-            Game game = service.startGameVsAi();
+            var game = service.startGameVsAi();
 
             //:TODO voorlopig gwn zo testen. als later speler random kleur krijgt moet test ofc worden aagepast
             assertThat(game).isNotNull();
@@ -54,7 +54,7 @@ public class CheckersServiceSociableTest {
 
         @Test
         void startGameVsPlayer_createsGameAndSaves() {
-            Game game = service.startGameVsPlayer();
+            var game = service.startGameVsPlayer();
 
             //:TODO voorlopig gwn zo testen. als later speler random kleur krijgt moet test ofc worden aagepast
             assertThat(game).isNotNull();
@@ -69,15 +69,15 @@ public class CheckersServiceSociableTest {
 
         @Test
         void getGame_existingGame_returnsGame() {
-            GameId gameId = new GameId(UUID.randomUUID());
-            Game game = new Game(
+            var gameId = new GameId(UUID.randomUUID());
+            var game = new Game(
                     Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "P1"),
                     Player.createAiPlayer(PieceColor.BLACK)
             );
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
 
-            Game result = service.getGame(gameId);
+            var result = service.getGame(gameId);
 
             assertThat(result).isEqualTo(game);
             verify(gameRepository).findById(gameId);
@@ -85,7 +85,7 @@ public class CheckersServiceSociableTest {
 
         @Test
         void getGame_nonExistingGame_throws() {
-            GameId gameId = new GameId(UUID.randomUUID());
+            var gameId = new GameId(UUID.randomUUID());
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.empty());
 
@@ -100,8 +100,8 @@ public class CheckersServiceSociableTest {
 
         @Test
         void makeMove_callsGameAndSaves() {
-            GameId gameId = new GameId(UUID.randomUUID());
-            Game game = spy(new Game(
+            var gameId = new GameId(UUID.randomUUID());
+            var game = spy(new Game(
                     Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "P1"),
                     Player.createAiPlayer(PieceColor.BLACK)
             ));
@@ -109,10 +109,13 @@ public class CheckersServiceSociableTest {
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
 
             // geldige zet
-            int fromRow = 5, fromCol = 0;
-            int toRow = 4, toCol = 1;
+            var fromRow = 5;
+            var fromCol = 0;
 
-            Game result = service.makeMove(gameId, fromRow, fromCol, toRow, toCol);
+            var toRow = 4;
+            var toCol = 1;
+
+            var result = service.makeMove(gameId, fromRow, fromCol, toRow, toCol);
 
             verify(game).makeMove(fromRow, fromCol, toRow, toCol);
             verify(gameRepository).save(game);
@@ -126,15 +129,16 @@ public class CheckersServiceSociableTest {
 
         @Test
         void getValidMoves_returnsMoves() {
-            GameId gameId = new GameId(UUID.randomUUID());
-            Game game = mock(Game.class);
+            var gameId = new GameId(UUID.randomUUID());
+            var game = mock(Game.class);
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
 
-            int row = 2, col = 1;
+            var row = 2;
+            var col = 1;
             List<Move> moves = List.of();
             when(game.getValidMovesForPiece(row, col)).thenReturn(moves);
 
-            List<Move> result = service.getValidMoves(gameId, row, col);
+            var result = service.getValidMoves(gameId, row, col);
 
             assertThat(result).isEqualTo(moves);
             verify(game).getValidMovesForPiece(row, col);
