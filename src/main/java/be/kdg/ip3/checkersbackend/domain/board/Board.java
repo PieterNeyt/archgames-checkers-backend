@@ -98,10 +98,12 @@ public class Board {
     private Square[][] copyGrid(Square[][] source) {
         var dest = new Square[BOARD_WIDTH][];
         for (int i = 0; i < 8; i++) {
-            dest[i] = Arrays.copyOf(source[i], 8);
+            dest[i] = new Square[8];
+            System.arraycopy(source[i], 0, dest[i], 0, 8);
         }
         return dest;
     }
+
 
     public List<Move> getValidMoves(int row, int col, PieceColor currentPlayerColor) {
         var fromSquare = getSquare(row, col);
