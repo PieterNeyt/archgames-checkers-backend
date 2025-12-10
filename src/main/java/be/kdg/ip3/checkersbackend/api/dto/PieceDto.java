@@ -10,8 +10,8 @@ public record PieceDto(
 ) {
     public static PieceDto fromDomain(Piece piece) {
         return new PieceDto(
-                piece.getColor(),
-                piece.getType()
+                piece.color(),
+                piece.type()
         );
     }
 }

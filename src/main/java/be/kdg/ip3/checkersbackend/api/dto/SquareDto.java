@@ -11,10 +11,10 @@ public record SquareDto(
 ) {
     public static SquareDto fromDomain(Square square) {
         return new SquareDto(
-                square.getRow(),
-                square.getCol(),
-                square.getColor(),
-                square.getPiece() != null ? PieceDto.fromDomain(square.getPiece()) : null
+                square.row(),
+                square.col(),
+                square.color(),
+                square.piece() != null ? PieceDto.fromDomain(square.piece()) : null
         );
     }
 }

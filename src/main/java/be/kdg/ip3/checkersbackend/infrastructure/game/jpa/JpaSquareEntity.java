@@ -1,4 +1,5 @@
 package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
+
 import be.kdg.ip3.checkersbackend.domain.board.Square;
 import be.kdg.ip3.checkersbackend.domain.board.SquareColor;
 import be.kdg.ip3.checkersbackend.domain.piece.Piece;
@@ -32,8 +33,9 @@ public class JpaSquareEntity {
     @Column(nullable = false)
     private SquareColor color;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "piece_id")
+    @Setter
     private JpaPieceEntity piece;
 
     public JpaSquareEntity() {}
@@ -46,26 +48,19 @@ public class JpaSquareEntity {
     }
 
     public static JpaSquareEntity fromDomain(Square square) {
-        JpaPieceEntity pieceEntity = null;
-        if (!square.isEmpty()) {
-            pieceEntity = JpaPieceEntity.fromDomain(square.getPiece());
-        }
+        var pieceEntity = square.isEmpty() ? null : JpaPieceEntity.fromDomain(square.piece());
 
         return new JpaSquareEntity(
-                square.getRow(),
-                square.getCol(),
-                square.getColor(),
+                square.row(),
+                square.col(),
+                square.color(),
                 pieceEntity
         );
     }
 
     public Square toDomain() {
-        Square square = new Square(row, col, color);
+        var domainPiece = (piece != null) ? piece.toDomain() : null;
 
-        if (piece != null) {
-            square.placePiece(piece.toDomain());
-        }
-
-        return square;
+        return new Square(row, col, color, domainPiece);
     }
 }

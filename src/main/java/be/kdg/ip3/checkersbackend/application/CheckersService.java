@@ -4,10 +4,12 @@ import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
+import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -50,5 +52,15 @@ public class CheckersService {
                 .orElseThrow(gameId::notFound);
     }
 
+    public List<Move> getValidMoves(GameId gameId, int row, int col) {
+        var game = getGame(gameId);
+        return game.getValidMovesForPiece(row, col);
+    }
 
+    public Game makeMove(GameId gameId, int fromRow, int fromCol, int toRow, int toCol) {
+        var game = getGame(gameId);
+        game.makeMove(fromRow, fromCol, toRow, toCol);
+        gameRepository.save(game);
+        return game;
+    }
 }

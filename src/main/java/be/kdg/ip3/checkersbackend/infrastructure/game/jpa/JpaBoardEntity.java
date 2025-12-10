@@ -1,15 +1,17 @@
 package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
 
-
 import be.kdg.ip3.checkersbackend.domain.board.Board;
 import be.kdg.ip3.checkersbackend.domain.board.BoardId;
 import be.kdg.ip3.checkersbackend.domain.board.Square;
 import be.kdg.ip3.checkersbackend.domain.board.SquareColor;
+import be.kdg.ip3.checkersbackend.domain.piece.Piece;
 import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -23,7 +25,8 @@ public class JpaBoardEntity {
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaSquareEntity> squares = new ArrayList<>();
 
-    public JpaBoardEntity() {}
+    public JpaBoardEntity() {
+    }
 
     public JpaBoardEntity(UUID id, List<JpaSquareEntity> squares) {
         this.id = id;
@@ -32,43 +35,92 @@ public class JpaBoardEntity {
 
     public static JpaBoardEntity fromDomain(Board board) {
         List<JpaSquareEntity> squareEntities = new ArrayList<>();
-        JpaBoardEntity entity = new JpaBoardEntity(board.getBoardId().id(), squareEntities);
 
-        for (int i = 0; i < 8; i++) {
-            for (int ii = 0; ii < 8; ii++) {
-                Square square = board.getSquare(i, ii);
-                JpaSquareEntity squareEntity = JpaSquareEntity.fromDomain(square);
-                squareEntity.setBoard(entity);
-                squareEntities.add(squareEntity);
+        var entity = new JpaBoardEntity(board.getBoardId().id(), squareEntities);
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                var s = board.getSquare(r, c);
+                var sq = JpaSquareEntity.fromDomain(s);
+                sq.setBoard(entity);
+                squareEntities.add(sq);
             }
         }
-
         return entity;
     }
 
-    public Board toDomain() {
-        Square[][] boardArray = new Square[8][8];
+    public void updateFromDomain(Board domain) {
 
-        // Init alle vakjes zonder pieces
-        for (int r = 0; r < 8; r++) {
-            for (int c = 0; c < 8; c++) {
-                boardArray[r][c] =
-                        new Square(
-                                r,
-                                c,
-                                ((r + c) % 2 == 0)
-                                        ? SquareColor.LIGHT_BROWN
-                                        : SquareColor.DARK_BROWN
-                        );
+        Map<UUID, JpaPieceEntity> existingPieceById = new HashMap<>();
+        Map<UUID, JpaSquareEntity> pieceOwnerSquare = new HashMap<>();
+        Map<String, JpaSquareEntity> squareByPos = new HashMap<>();
+
+        for (JpaSquareEntity sq : this.squares) {
+            squareByPos.put(sq.getRow() + "-" + sq.getCol(), sq);
+
+            if (sq.getPiece() != null) {
+                existingPieceById.put(sq.getPiece().getId(), sq.getPiece());
+                pieceOwnerSquare.put(sq.getPiece().getId(), sq);
             }
         }
-        // pieces toevoegen
-        for (JpaSquareEntity squareEntity : squares) {
-            Square square = squareEntity.toDomain();
-            boardArray[square.getRow()][square.getCol()] = square;
-        }
 
-        return new Board(new BoardId(id), boardArray);
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                var domainSquare = domain.getSquare(r, c);
+                var targetSq = squareByPos.get(r + "-" + c);
+
+                if (targetSq == null) {
+                    continue;
+                }
+
+                if (domainSquare.isEmpty()) {
+                    if (targetSq.getPiece() != null) {
+                        targetSq.setPiece(null);
+                    }
+                } else {
+
+                    var dp = domainSquare.piece();
+                    var pieceId = dp.pieceId().id();
+
+                    var managedPiece = existingPieceById.get(pieceId);
+
+                    if (managedPiece != null) {
+                        managedPiece.setType(dp.type());
+
+                        var oldOwner = pieceOwnerSquare.get(pieceId);
+                        if (oldOwner != null && oldOwner != targetSq) {
+                            oldOwner.setPiece(null);
+                            pieceOwnerSquare.put(pieceId, targetSq);
+                        }
+
+                        targetSq.setPiece(managedPiece);
+                    } else {
+                        var newPiece = JpaPieceEntity.fromDomain(dp);
+                        targetSq.setPiece(newPiece);
+
+                        existingPieceById.put(pieceId, newPiece);
+                        pieceOwnerSquare.put(pieceId, targetSq);
+                    }
+                }
+            }
+        }
     }
 
+    public Board toDomain() {
+        var arr = new Square[8][8];
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                var color = ((r + c) % 2 == 0) ? SquareColor.LIGHT_BROWN : SquareColor.DARK_BROWN;
+                arr[r][c] = new Square(r, c, color, null);
+            }
+        }
+
+        for (JpaSquareEntity s : squares) {
+            var sq = s.toDomain();
+            arr[sq.row()][sq.col()] = sq;
+        }
+
+        return new Board(new BoardId(id), arr);
+    }
 }

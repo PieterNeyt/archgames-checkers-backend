@@ -6,6 +6,7 @@ import be.kdg.ip3.checkersbackend.domain.piece.PieceId;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceType;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
@@ -21,6 +22,7 @@ public class JpaPieceEntity {
     @Column(nullable = false)
     private PieceColor color;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PieceType type;
@@ -35,9 +37,9 @@ public class JpaPieceEntity {
 
     public static JpaPieceEntity fromDomain(Piece piece) {
         return new JpaPieceEntity(
-                piece.getPieceId().id(),
-                piece.getColor(),
-                piece.getType()
+                piece.pieceId().id(),
+                piece.color(),
+                piece.type()
         );
     }
 

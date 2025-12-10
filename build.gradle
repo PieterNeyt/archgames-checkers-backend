@@ -37,6 +37,8 @@ dependencies {
     testImplementation 'com.h2database:h2'
     implementation 'org.postgresql:postgresql:42.7.3'
 
+
+    testImplementation 'org.jmolecules.integrations:jmolecules-starter-test:0.29.0'
 }
 
 tasks.named('test') {
