@@ -9,9 +9,9 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQTopology {
 
     @Value("${checkers.exchange.name}")
-    public static final String CHECKERS_EXCHANGE_NAME = "checkers-exchange";
+    public String CHECKERS_EXCHANGE_NAME ;
     @Value("${checkers.queue.name}")
-    public static final String CHECKERS_QUEUE_NAME = "checkers-queue";
+    public String CHECKERS_QUEUE_NAME ;
 
 
     // Order topology

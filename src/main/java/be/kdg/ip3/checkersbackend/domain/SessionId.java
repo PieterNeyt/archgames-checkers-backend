@@ -12,6 +12,6 @@ public record SessionId(UUID id) {
         return new SessionId(UUID.randomUUID());
     }
     public NotFoundException notFound() {
-        return new NotFoundException("Game [" + id + "] not found");
+        return new NotFoundException("Session [" + id + "] not found");
     }
 }
