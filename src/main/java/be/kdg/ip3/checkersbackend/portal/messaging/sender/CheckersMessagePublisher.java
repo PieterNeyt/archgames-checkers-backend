@@ -10,13 +10,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class CheckersMessagePublisher {
     private final RabbitTemplate rabbitTemplate;
-    public CheckersMessagePublisher(RabbitTemplate rabbitTemplate) {
+    private final RabbitMQTopology rabbitMQTopology;
+    public CheckersMessagePublisher(RabbitTemplate rabbitTemplate, RabbitMQTopology rabbitMQTopology) {
         this.rabbitTemplate = rabbitTemplate;
+        this.rabbitMQTopology = rabbitMQTopology;
     }
 
     public void publishGameResult(CheckersGameResultMessage message) {
         rabbitTemplate.convertAndSend(
-                RabbitMQTopology.CHECKERS_EXCHANGE_NAME,
+                rabbitMQTopology.CHECKERS_EXCHANGE_NAME,
                 "checkers.game.result",
                 message
         );
