@@ -1,4 +1,4 @@
-package be.kdg.ip3.checkersbackend.api.dto;
+package be.kdg.ip3.checkersbackend.api.dto.game;
 
 import be.kdg.ip3.checkersbackend.domain.board.Board;
 

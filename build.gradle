@@ -36,7 +36,7 @@ dependencies {
     implementation 'org.jmolecules.integrations:jmolecules-starter-ddd:0.29.0'
     testImplementation 'com.h2database:h2'
     implementation 'org.postgresql:postgresql:42.7.3'
-
+    implementation("org.springframework.boot:spring-boot-starter-amqp")
 
     testImplementation 'org.jmolecules.integrations:jmolecules-starter-test:0.29.0'
 }

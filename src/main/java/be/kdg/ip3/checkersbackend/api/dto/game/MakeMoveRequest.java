@@ -1,4 +1,4 @@
-package be.kdg.ip3.checkersbackend.api.dto;
+package be.kdg.ip3.checkersbackend.api.dto.game;
 
 public record MakeMoveRequest(
         int fromRow,
