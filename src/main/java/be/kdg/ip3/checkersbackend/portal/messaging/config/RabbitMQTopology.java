@@ -1,13 +1,16 @@
 package be.kdg.ip3.checkersbackend.portal.messaging.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQTopology {
 
+    @Value("${checkers.exchange.name}")
     public static final String CHECKERS_EXCHANGE_NAME = "checkers-exchange";
+    @Value("${checkers.queue.name}")
     public static final String CHECKERS_QUEUE_NAME = "checkers-queue";
 
 
