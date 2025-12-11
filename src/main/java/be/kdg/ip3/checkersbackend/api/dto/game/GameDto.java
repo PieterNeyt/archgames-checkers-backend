@@ -1,4 +1,4 @@
-package be.kdg.ip3.checkersbackend.api.dto;
+package be.kdg.ip3.checkersbackend.api.dto.game;
 
 import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameState;
@@ -6,7 +6,6 @@ import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public record GameDto(
         UUID gameId,

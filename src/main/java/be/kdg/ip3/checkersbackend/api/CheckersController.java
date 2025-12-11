@@ -1,10 +1,13 @@
 package be.kdg.ip3.checkersbackend.api;
 
-import be.kdg.ip3.checkersbackend.api.dto.GameDto;
-import be.kdg.ip3.checkersbackend.api.dto.MakeMoveRequest;
-import be.kdg.ip3.checkersbackend.api.dto.MoveDto;
+import be.kdg.ip3.checkersbackend.api.dto.game.GameDto;
+import be.kdg.ip3.checkersbackend.api.dto.game.MakeMoveRequest;
+import be.kdg.ip3.checkersbackend.api.dto.game.MoveDto;
+import be.kdg.ip3.checkersbackend.api.dto.portal.SessionInfo;
 import be.kdg.ip3.checkersbackend.application.CheckersService;
+import be.kdg.ip3.checkersbackend.domain.SessionId;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
+import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,21 +20,31 @@ import java.util.UUID;
 public class CheckersController {
 
     private final CheckersService checkersService;
+    private final LauncherClient launcherClient;
 
-    public CheckersController(CheckersService checkersService) {
+    public CheckersController(CheckersService checkersService, LauncherClient launcherClient) {
         this.checkersService = checkersService;
+        this.launcherClient = launcherClient;
     }
 
-    @PostMapping("/start-ai")
-    public ResponseEntity<GameDto> startGameVsAi() {
+    @PostMapping("{sessionId}/start-ai")
+    public ResponseEntity<GameDto> startGameVsAi(
+            @PathVariable UUID sessionId
+    ) {
         var game = checkersService.startGameVsAi();
+        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
                 .body(GameDto.fromDomain(game));
     }
 
-    @PostMapping("/start-player")
-    public ResponseEntity<GameDto> startGameVsPlayer() {
+    @PostMapping("{sessionId}/start-player")
+    public ResponseEntity<GameDto> startGameVsPlayer(
+            @PathVariable UUID sessionId
+    ) {
+        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+
         var game = checkersService.startGameVsPlayer();
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
