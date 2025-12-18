@@ -4,6 +4,7 @@ import be.kdg.ip3.checkersbackend.domain.board.Board;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import lombok.Getter;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -17,7 +18,6 @@ import java.util.List;
 public class Game {
     @Identity
     private final GameId gameId;
-
     private Board board;
     private final Player playerWhite;
     private final Player playerBlack;
@@ -101,6 +101,14 @@ public class Game {
             currentPlayerColor = PieceColor.WHITE;
         }
     }
+
+    public Player getAiPLayer() {
+        if (playerWhite.type()== PlayerType.AI) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
+
 
     private void checkGameOver() {
         var otherPlayerColor = (currentPlayerColor == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
