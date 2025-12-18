@@ -83,5 +83,13 @@ public class CheckersController {
         );
         return ResponseEntity.ok(GameDto.fromDomain(game));
     }
+    @PostMapping("/{gameId}/move/ai")
+    public ResponseEntity<GameDto> makeMove(
+            @PathVariable UUID gameId) {
 
+        var game = checkersService.makeMove(
+                new GameId(gameId)
+        );
+        return ResponseEntity.ok(GameDto.fromDomain(game));
+    }
 }

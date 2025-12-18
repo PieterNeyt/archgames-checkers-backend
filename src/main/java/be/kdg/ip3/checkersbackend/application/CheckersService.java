@@ -1,11 +1,13 @@
 package be.kdg.ip3.checkersbackend.application;
 
+import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveRequest;
 import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class CheckersService {
 
     private final GameRepository gameRepository;
+    private final AiClient aiClient;
 
-    public CheckersService(GameRepository gameRepository) {
+    public CheckersService(GameRepository gameRepository, AiClient aiClient) {
         this.gameRepository = gameRepository;
+        this.aiClient = aiClient;
     }
 
     public Game startGameVsAi() {
@@ -60,6 +64,14 @@ public class CheckersService {
     public Game makeMove(GameId gameId, int fromRow, int fromCol, int toRow, int toCol) {
         var game = getGame(gameId);
         game.makeMove(fromRow, fromCol, toRow, toCol);
+        gameRepository.save(game);
+        return game;
+    }
+
+    public Game makeMove(GameId gameId) {
+        var game = getGame(gameId);
+        var response = aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
+
         gameRepository.save(game);
         return game;
     }
