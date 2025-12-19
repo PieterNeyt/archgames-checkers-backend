@@ -1,15 +1,16 @@
 package be.kdg.ip3.checkersbackend.application;
 
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveRequest;
+import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveResponse;
 import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.Position;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
-import be.kdg.ip3.checkersbackend.portal.ai.DraughtsMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,23 +73,19 @@ public class CheckersService {
 
     public Game makeMove(GameId gameId) {
         var game = getGame(gameId);
+        AiMoveResponse response = aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
 
-        var response = aiClient.requestAiMove(
-                AiMoveRequest.fromDomain(game)
-        );
+        if (response.executed_moves() != null && !response.executed_moves().isEmpty()) {
 
-        var moves = AiMoveParser.parseMoves(response.executed_moves());
+            String[] parts = response.executed_moves().split("-");
 
-        for (var move : moves) {
-            var from = DraughtsMapper.toBackendPosition(move[0]);
-            var to = DraughtsMapper.toBackendPosition(move[1]);
+            for (int i = 0; i < parts.length - 1; i++) {
 
-            game.makeMove(
-                    from.row(),
-                    from.col(),
-                    to.row(),
-                    to.col()
-            );
+                Position from = AiMoveParser.getBackendPosition(parts[i]);
+                Position to = AiMoveParser.getBackendPosition(parts[i + 1]);
+
+                game.makeMove(from.row(), from.col(), to.row(), to.col());
+            }
         }
 
         gameRepository.save(game);

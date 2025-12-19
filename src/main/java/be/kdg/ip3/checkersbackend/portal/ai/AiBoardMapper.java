@@ -10,37 +10,31 @@ public final class AiBoardMapper {
 
     public static String[][] toAiBoard(Board board) {
         String[][] aiBoard = new String[8][8];
+        Square[][] squares = board.getSquares();
 
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
+                Square square = squares[7 - row][7 - col];
 
-                Square square = board.getSquares()[7 - row][col];
+                Piece piece = square.piece();
 
-                if (square.isEmpty() || !isPlayableSquare(row, col)) {
-                    aiBoard[row][col] = " ";
-                    continue;
+                if (piece == null) {
+                    aiBoard[row][col] = "";
+                } else {
+                    aiBoard[row][col] = mapPiece(piece);
                 }
-
-                aiBoard[row][col] = mapPiece(square.piece());
             }
         }
-
         return aiBoard;
     }
 
-    private static boolean isPlayableSquare(int row, int col) {
-        return (row + col) % 2 != 0;
-    }
-
     private static String mapPiece(Piece piece) {
-        if (piece == null) return " ";
 
-        String color = piece.color().toString();
+        String colorChar = piece.color().toString().substring(0, 1).toUpperCase();
 
         if (piece.isKing()) {
-            return color + "K";
+            return colorChar + "K";
         }
-
-        return color;
+        return colorChar;
     }
 }

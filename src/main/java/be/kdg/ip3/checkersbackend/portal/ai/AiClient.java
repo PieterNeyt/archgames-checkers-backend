@@ -21,11 +21,12 @@ public class AiClient {
     }
 
     public AiMoveResponse requestAiMove(AiMoveRequest dto) {
-        return restClient.post()
+        var bla=  restClient.post()
                 .uri(aiServiceUrl)
                 .body(dto)
                 .retrieve()
                 .body(AiMoveResponse.class);
+        return bla;
     }
 }
 
