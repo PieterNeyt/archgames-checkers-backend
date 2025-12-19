@@ -1,13 +1,24 @@
 package be.kdg.ip3.checkersbackend.portal.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-@Component
+import java.net.http.HttpClient;
+
+@Configuration
 public class RestClientConfig {
     @Bean
     public RestClient restClient() {
-        return RestClient.builder().build();
+
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        return RestClient.builder()
+                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+                .build();
     }
 }

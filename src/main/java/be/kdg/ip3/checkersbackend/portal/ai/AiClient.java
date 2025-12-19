@@ -21,13 +21,14 @@ public class AiClient {
     }
 
     public AiMoveResponse requestAiMove(AiMoveRequest dto) {
-        var bla=  restClient.post()
+        return restClient.post()
                 .uri(aiServiceUrl)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(dto)
                 .retrieve()
                 .body(AiMoveResponse.class);
-        return bla;
     }
+
 }
 
 

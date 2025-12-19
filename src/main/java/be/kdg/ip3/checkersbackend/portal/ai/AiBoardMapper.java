@@ -19,7 +19,7 @@ public final class AiBoardMapper {
                 Piece piece = square.piece();
 
                 if (piece == null) {
-                    aiBoard[row][col] = "";
+                    aiBoard[row][col] = " ";
                 } else {
                     aiBoard[row][col] = mapPiece(piece);
                 }

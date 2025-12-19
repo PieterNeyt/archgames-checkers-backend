@@ -1,24 +1,38 @@
 package be.kdg.ip3.checkersbackend.api.dto.external;
 
 import be.kdg.ip3.checkersbackend.domain.game.Game;
-import be.kdg.ip3.checkersbackend.domain.game.GameState;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.portal.ai.AiBoardMapper;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+
+
 public record AiMoveRequest(
-        @JsonProperty("gameId") // BELANGRIJK: map naar de juiste naam
+        @JsonProperty("gameId")
         String gameId,
-        String game_name,
+
+        @JsonProperty("game_name")
+        String gameName,
+
+        @JsonProperty("board")
         String[][] board,
-        String current_player,
-        String ai_player,
-        String king_movement_mode,
+
+        @JsonProperty("current_player")
+        String currentPlayer,
+
+        @JsonProperty("ai_player")
+        String aiPlayer,
+
+        @JsonProperty("king_movement_mode")
+        String kingMovementMode,
+
+        @JsonProperty("difficulty")
         String difficulty,
-        List<String> previous_moves,
-        GameState game_status
+
+        @JsonProperty("previous_moves")
+        List<String> previousMoves
 ) {
     public static AiMoveRequest fromDomain(Game game) {
         List<String> mappedMoves = mapMovesToStrings(game.getMoves());
@@ -31,8 +45,7 @@ public record AiMoveRequest(
                 game.getAiPLayer().color().toString().substring(0, 1).toUpperCase(),
                 "SINGLE",
                 "MEDIUM",
-                mappedMoves.isEmpty() ? null : mappedMoves,
-                game.getState()
+                mappedMoves.isEmpty() ? null : mappedMoves
         );
     }
 
