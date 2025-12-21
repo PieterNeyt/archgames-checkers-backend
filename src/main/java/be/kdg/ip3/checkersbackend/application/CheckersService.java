@@ -2,6 +2,7 @@ package be.kdg.ip3.checkersbackend.application;
 
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveRequest;
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveResponse;
+import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
 import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -29,17 +31,26 @@ public class CheckersService {
         this.aiClient = aiClient;
     }
 
-    public Game startGameVsAi() {
-        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
-        var tempPlayerId = UUID.randomUUID();
-        var humanPlayer = Player.createHumanPlayer(tempPlayerId, PieceColor.WHITE, "Player");
-        var aiPlayer = Player.createAiPlayer(PieceColor.BLACK);
+    public Game startGameVsAi(UUID playerId, AiDifficulty difficulty) {
+        boolean humanIsWhite = new Random().nextBoolean();
 
-        var game = new Game(humanPlayer, aiPlayer);
+        var humanColor = humanIsWhite ? PieceColor.WHITE : PieceColor.BLACK;
+        var aiColor = humanIsWhite ? PieceColor.BLACK : PieceColor.WHITE;
+
+        var humanPlayer = Player.createHumanPlayer(playerId, humanColor, "Player");
+        var aiPlayer = Player.createAiPlayer(aiColor);
+
+        Player playerWhite = humanPlayer.color() == PieceColor.WHITE ? humanPlayer : aiPlayer;
+        Player playerBlack = humanPlayer.color() == PieceColor.BLACK ? humanPlayer : aiPlayer;
+
+        var game = new Game(playerWhite, playerBlack, difficulty);
         gameRepository.save(game);
 
         return game;
     }
+
+
+
 
     public Game startGameVsPlayer() {
         //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
@@ -66,7 +77,10 @@ public class CheckersService {
 
     public Game makeMove(GameId gameId, int fromRow, int fromCol, int toRow, int toCol) {
         var game = getGame(gameId);
+
+
         game.makeMove(fromRow, fromCol, toRow, toCol);
+
         gameRepository.save(game);
         return game;
     }
@@ -84,7 +98,7 @@ public class CheckersService {
                 Position from = AiMoveParser.getBackendPosition(parts[i]);
                 Position to = AiMoveParser.getBackendPosition(parts[i + 1]);
 
-                game.makeMove(from.row(), from.col(), to.row(), to.col());
+                game.makeMove( from.row(), from.col(), to.row(), to.col());
             }
         }
 

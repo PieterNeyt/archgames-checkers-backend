@@ -41,13 +41,14 @@ public record AiMoveRequest(
                 game.getGameId().id().toString(),
                 "CHECKERS",
                 AiBoardMapper.toAiBoard(game.getBoard()),
-                game.getCurrentPlayerColor().toString().substring(0, 1).toUpperCase(),
-                game.getAiPLayer().color().toString().substring(0, 1).toUpperCase(),
+                game.getCurrentPlayerColor().toString().substring(0, 1),
+                game.getAiPLayer().color().toString().substring(0, 1),
                 "SINGLE",
-                "MEDIUM",
+                game.getAiDifficulty().name(),
                 mappedMoves.isEmpty() ? null : mappedMoves
         );
     }
+
 
     private static List<String> mapMovesToStrings(List<Move> moves) {
         if (moves == null || moves.isEmpty()) return List.of();

@@ -12,6 +12,7 @@ import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @AggregateRoot
@@ -24,23 +25,45 @@ public class Game {
     private GameState state;
     private PieceColor currentPlayerColor;
     private final List<Move> moves;
+    private final AiDifficulty aiDifficulty;
 
     public Game(Player playerWhite, Player playerBlack) {
-        this(GameId.create(), playerWhite, playerBlack, new Board(), GameState.IN_PROGRESS, PieceColor.WHITE, new ArrayList<>());
+        this(
+                GameId.create(),
+                playerWhite,
+                playerBlack,
+                new Board(),
+                GameState.IN_PROGRESS,
+                PieceColor.WHITE,
+                new ArrayList<>(),
+                AiDifficulty.MEDIUM
+
+        );
     }
 
-    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board,
-                GameState state, PieceColor currentPlayerColor, List<Move> moves) {
-        if (playerWhite.color() == playerBlack.color()) {
-            throw new IllegalArgumentException("Players must have different colors");
-        }
+    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty) {
+        this(
+                GameId.create(),
+                playerWhite,
+                playerBlack,
+                new Board(),
+                GameState.IN_PROGRESS,
+                PieceColor.WHITE,
+                new ArrayList<>(),
+                aiDifficulty
+        );
+    }
+
+    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board, GameState state, PieceColor currentPlayerColor, List<Move> moves, AiDifficulty aiDifficulty
+    ) {
         this.gameId = gameId;
-        this.board = board;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
+        this.board = board;
         this.state = state;
         this.currentPlayerColor = currentPlayerColor;
-        this.moves = new ArrayList<>(moves);
+        this.moves = moves;
+        this.aiDifficulty = aiDifficulty;
     }
 
     public List<Position> getPlayablePieces() {
@@ -64,7 +87,7 @@ public class Game {
         return pieceMoves;
     }
 
-    public void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
+    public void makeMove( int fromRow, int fromCol, int toRow, int toCol) {
         if (state != GameState.IN_PROGRESS) {
             throw new IllegalStateException("Game is not in progress");
         }

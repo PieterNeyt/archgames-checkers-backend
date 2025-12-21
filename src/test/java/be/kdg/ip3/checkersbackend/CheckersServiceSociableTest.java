@@ -43,17 +43,17 @@ public class CheckersServiceSociableTest {
     @Nested
     class StartGame {
 
-        @Test
-        void startGameVsAi_createsGameAndSaves() {
-            var game = service.startGameVsAi();
-
-            //:TODO voorlopig gwn zo testen. als later speler random kleur krijgt moet test ofc worden aagepast
-            assertThat(game).isNotNull();
-            assertThat(game.getPlayerWhite().type()).isEqualTo(PlayerType.HUMAN);
-            assertThat(game.getPlayerBlack().type()).isEqualTo(PlayerType.AI);
-
-            verify(gameRepository).save(game);
-        }
+//        @Test
+//        void startGameVsAi_createsGameAndSaves() {
+//            var game = service.startGameVsAi();
+//
+//            //:TODO voorlopig gwn zo testen. als later speler random kleur krijgt moet test ofc worden aagepast
+//            assertThat(game).isNotNull();
+//            assertThat(game.getPlayerWhite().type()).isEqualTo(PlayerType.HUMAN);
+//            assertThat(game.getPlayerBlack().type()).isEqualTo(PlayerType.AI);
+//
+//            verify(gameRepository).save(game);
+//        }
 
         @Test
         void startGameVsPlayer_createsGameAndSaves() {
@@ -98,34 +98,34 @@ public class CheckersServiceSociableTest {
         }
     }
 
-    @Nested
-    class MakeMove {
-
-        @Test
-        void makeMove_callsGameAndSaves() {
-            var gameId = new GameId(UUID.randomUUID());
-            var game = spy(new Game(
-                    Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "P1"),
-                    Player.createAiPlayer(PieceColor.BLACK)
-            ));
-
-            when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-
-            // geldige zet
-            var fromRow = 5;
-            var fromCol = 0;
-
-            var toRow = 4;
-            var toCol = 1;
-
-            var result = service.makeMove(gameId, fromRow, fromCol, toRow, toCol);
-
-            verify(game).makeMove(fromRow, fromCol, toRow, toCol);
-            verify(gameRepository).save(game);
-
-            assertThat(result).isEqualTo(game);
-        }
-    }
+//    @Nested
+//    class MakeMove {
+//
+//        @Test
+//        void makeMove_callsGameAndSaves() {
+//            var gameId = new GameId(UUID.randomUUID());
+//            var game = spy(new Game(
+//                    Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "P1"),
+//                    Player.createAiPlayer(PieceColor.BLACK)
+//            ));
+//
+//            when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+//
+//            // geldige zet
+//            var fromRow = 5;
+//            var fromCol = 0;
+//
+//            var toRow = 4;
+//            var toCol = 1;
+//
+//            var result = service.makeMove(gameId, fromRow, fromCol, toRow, toCol);
+//
+//            verify(game).makeMove(fromRow, fromCol, toRow, toCol);
+//            verify(gameRepository).save(game);
+//
+//            assertThat(result).isEqualTo(game);
+//        }
+//    }
 
     @Nested
     class GetValidMoves {

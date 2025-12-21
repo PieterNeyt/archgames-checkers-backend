@@ -6,7 +6,9 @@ import be.kdg.ip3.checkersbackend.api.dto.game.MoveDto;
 import be.kdg.ip3.checkersbackend.api.dto.portal.SessionInfo;
 import be.kdg.ip3.checkersbackend.application.CheckersService;
 import be.kdg.ip3.checkersbackend.domain.SessionId;
+import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,21 +31,28 @@ public class CheckersController {
 
     @PostMapping("{sessionId}/start-ai")
     public ResponseEntity<GameDto> startGameVsAi(
-            @PathVariable UUID sessionId
+            @PathVariable UUID sessionId,
+            @RequestParam AiDifficulty difficulty
     ) {
-        var game = checkersService.startGameVsAi();
-        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+        var session = launcherClient.validateSession(new SessionId(sessionId));
+        var game = checkersService.startGameVsAi(session.playerId(), difficulty);
+
+        // Als de AI wit is (begint), laat de AI direct een zet doen
+        if (game.getPlayerWhite().type() == PlayerType.AI) {
+            game = checkersService.makeMove(game.getGameId());
+        }
 
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
                 .body(GameDto.fromDomain(game));
     }
 
+
     @PostMapping("{sessionId}/start-player")
     public ResponseEntity<GameDto> startGameVsPlayer(
             @PathVariable UUID sessionId
     ) {
-        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+        var session = launcherClient.validateSession(new SessionId(sessionId));
 
         var game = checkersService.startGameVsPlayer();
         return ResponseEntity
