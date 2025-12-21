@@ -2,13 +2,11 @@ package be.kdg.ip3.checkersbackend.application;
 
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveRequest;
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveResponse;
-import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
-import be.kdg.ip3.checkersbackend.domain.game.Game;
-import be.kdg.ip3.checkersbackend.domain.game.GameId;
-import be.kdg.ip3.checkersbackend.domain.game.GameRepository;
+import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
@@ -75,11 +73,20 @@ public class CheckersService {
         return game.getValidMovesForPiece(row, col);
     }
 
-    public Game makeMove(GameId gameId, int fromRow, int fromCol, int toRow, int toCol) {
+    public Game makeMove(GameId gameId,UUID playerId, int fromRow, int fromCol, int toRow, int toCol) {
         var game = getGame(gameId);
 
 
+        validatePlayerIsHumanPlayer(game, playerId);
+
+        validatePlayerOwnsCurrentTurn(game, playerId);
+
         game.makeMove(fromRow, fromCol, toRow, toCol);
+
+        if (game.getState() != GameState.IN_PROGRESS) {
+            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
+        }
+
 
         gameRepository.save(game);
         return game;
@@ -102,8 +109,36 @@ public class CheckersService {
             }
         }
 
+        if (game.getState() != GameState.IN_PROGRESS) {
+            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
+        }
+
         gameRepository.save(game);
         return game;
+    }
+
+    private void validatePlayerIsHumanPlayer(Game game, UUID playerId) {
+        // Check of de playerId overeenkomt met wit of zwart
+        boolean isPlayerWhite = game.getPlayerWhite().type() == PlayerType.HUMAN
+                && game.getPlayerWhite().profileId().equals(playerId);
+        boolean isPlayerBlack = game.getPlayerBlack().type() == PlayerType.HUMAN
+                && game.getPlayerBlack().profileId().equals(playerId);
+
+        if (!isPlayerWhite && !isPlayerBlack) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
+    }
+
+    private void validatePlayerOwnsCurrentTurn(Game game, UUID playerId) {
+        var currentPlayer = game.getCurrentPlayer();
+
+        if (currentPlayer.type() != PlayerType.HUMAN) {
+            throw new IllegalStateException("It's not the human player's turn");
+        }
+
+        if (!currentPlayer.profileId().equals(playerId)) {
+            throw new IllegalArgumentException("It's not your turn");
+        }
     }
 
 }

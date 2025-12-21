@@ -131,6 +131,12 @@ public class Game {
         }
         return playerBlack;
     }
+    public Player getCurrentPlayer() {
+        if (playerWhite.color()== currentPlayerColor) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
 
 
     private void checkGameOver() {

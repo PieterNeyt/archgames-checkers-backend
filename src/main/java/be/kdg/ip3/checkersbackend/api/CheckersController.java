@@ -78,13 +78,18 @@ public class CheckersController {
         return ResponseEntity.ok(moveDtos);
     }
 
-    @PostMapping("/{gameId}/move")
+    @PostMapping("/{sessionId}/{gameId}/move")
     public ResponseEntity<GameDto> makeMove(
+            @PathVariable UUID sessionId,
             @PathVariable UUID gameId,
             @RequestBody MakeMoveRequest request) {
 
+        var session = launcherClient.validateSession(new SessionId(sessionId));
+
+
         var game = checkersService.makeMove(
                 new GameId(gameId),
+                session.playerId(),
                 request.fromRow(),
                 request.fromCol(),
                 request.toRow(),
