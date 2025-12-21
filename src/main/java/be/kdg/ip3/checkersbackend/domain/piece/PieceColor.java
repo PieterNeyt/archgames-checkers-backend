@@ -6,6 +6,10 @@ public enum PieceColor {
 
     private final String value;
 
+    public PieceColor opposite() {
+        return this == WHITE ? BLACK : WHITE;
+    }
+
     PieceColor(String value) {
         this.value = value;
     }

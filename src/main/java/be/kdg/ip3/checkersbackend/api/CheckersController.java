@@ -3,7 +3,6 @@ package be.kdg.ip3.checkersbackend.api;
 import be.kdg.ip3.checkersbackend.api.dto.game.GameDto;
 import be.kdg.ip3.checkersbackend.api.dto.game.MakeMoveRequest;
 import be.kdg.ip3.checkersbackend.api.dto.game.MoveDto;
-import be.kdg.ip3.checkersbackend.api.dto.portal.SessionInfo;
 import be.kdg.ip3.checkersbackend.application.CheckersService;
 import be.kdg.ip3.checkersbackend.domain.SessionId;
 import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
@@ -36,11 +35,6 @@ public class CheckersController {
     ) {
         var session = launcherClient.validateSession(new SessionId(sessionId));
         var game = checkersService.startGameVsAi(session.playerId(), difficulty);
-
-        // Als de AI wit is (begint), laat de AI direct een zet doen
-        if (game.getPlayerWhite().type() == PlayerType.AI) {
-            game = checkersService.makeMove(game.getGameId());
-        }
 
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
@@ -86,7 +80,6 @@ public class CheckersController {
 
         var session = launcherClient.validateSession(new SessionId(sessionId));
 
-
         var game = checkersService.makeMove(
                 new GameId(gameId),
                 session.playerId(),
@@ -97,6 +90,7 @@ public class CheckersController {
         );
         return ResponseEntity.ok(GameDto.fromDomain(game));
     }
+
     @PostMapping("/{gameId}/move/ai")
     public ResponseEntity<GameDto> makeMove(
             @PathVariable UUID gameId) {

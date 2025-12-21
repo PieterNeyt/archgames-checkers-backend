@@ -36,7 +36,7 @@ public class Game {
                 GameState.IN_PROGRESS,
                 PieceColor.WHITE,
                 new ArrayList<>(),
-                AiDifficulty.MEDIUM
+                null
 
         );
     }

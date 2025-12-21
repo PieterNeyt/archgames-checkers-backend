@@ -30,37 +30,41 @@ public class CheckersService {
     }
 
     public Game startGameVsAi(UUID playerId, AiDifficulty difficulty) {
-        boolean humanIsWhite = new Random().nextBoolean();
+        //:TODO nog zorgen dat naam van speler wordt meegegeven maar dat is voor multiplayer us
+        var humanPlayer = Player.createHumanPlayer(playerId, getRandomColor(), "Player");
+        var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
 
-        var humanColor = humanIsWhite ? PieceColor.WHITE : PieceColor.BLACK;
-        var aiColor = humanIsWhite ? PieceColor.BLACK : PieceColor.WHITE;
+        var game = createGame(humanPlayer, aiPlayer, difficulty);
 
-        var humanPlayer = Player.createHumanPlayer(playerId, humanColor, "Player");
-        var aiPlayer = Player.createAiPlayer(aiColor);
-
-        Player playerWhite = humanPlayer.color() == PieceColor.WHITE ? humanPlayer : aiPlayer;
-        Player playerBlack = humanPlayer.color() == PieceColor.BLACK ? humanPlayer : aiPlayer;
-
-        var game = new Game(playerWhite, playerBlack, difficulty);
-        gameRepository.save(game);
+        if (game.getPlayerWhite().type() == PlayerType.AI) {
+            game = makeMove(game.getGameId());
+        }
 
         return game;
     }
 
-
-
-
     public Game startGameVsPlayer() {
         //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
-        var playerWhite = UUID.randomUUID();
-        var playerBlack = UUID.randomUUID();
-        var player1 = Player.createHumanPlayer(playerWhite, PieceColor.WHITE, "Player 1");
-        var player2 = Player.createHumanPlayer(playerBlack, PieceColor.BLACK, "Player 2");
+        var player1 = Player.createHumanPlayer(UUID.randomUUID(), getRandomColor(), "Player 1");
+        var player2 = Player.createHumanPlayer(UUID.randomUUID(), player1.color().opposite(), "Player 2");
 
-        var game = new Game(player1, player2);
+        return createGame(player1, player2, null);
+    }
+
+    private Game createGame(Player player1, Player player2, AiDifficulty difficulty) {
+        var playerWhite = (player1.color() == PieceColor.WHITE) ? player1 : player2;
+        var playerBlack = (player1.color() == PieceColor.BLACK) ? player1 : player2;
+
+        var game = difficulty != null
+                ? new Game(playerWhite, playerBlack, difficulty)
+                : new Game(playerWhite, playerBlack);
+
         gameRepository.save(game);
-
         return game;
+    }
+
+    private PieceColor getRandomColor() {
+        return new Random().nextBoolean() ? PieceColor.WHITE : PieceColor.BLACK;
     }
 
     public Game getGame(GameId gameId) {
