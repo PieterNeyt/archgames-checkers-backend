@@ -7,7 +7,6 @@ import be.kdg.ip3.checkersbackend.application.CheckersService;
 import be.kdg.ip3.checkersbackend.domain.SessionId;
 import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
-import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

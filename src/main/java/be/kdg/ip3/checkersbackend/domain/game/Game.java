@@ -12,7 +12,6 @@ import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @AggregateRoot
@@ -87,7 +86,7 @@ public class Game {
         return pieceMoves;
     }
 
-    public void makeMove( int fromRow, int fromCol, int toRow, int toCol) {
+    public void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (state != GameState.IN_PROGRESS) {
             throw new IllegalStateException("Game is not in progress");
         }
@@ -126,13 +125,14 @@ public class Game {
     }
 
     public Player getAiPLayer() {
-        if (playerWhite.type()== PlayerType.AI) {
+        if (playerWhite.type() == PlayerType.AI) {
             return playerWhite;
         }
         return playerBlack;
     }
+
     public Player getCurrentPlayer() {
-        if (playerWhite.color()== currentPlayerColor) {
+        if (playerWhite.color() == currentPlayerColor) {
             return playerWhite;
         }
         return playerBlack;

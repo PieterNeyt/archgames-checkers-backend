@@ -36,10 +36,6 @@ public class CheckersService {
 
         var game = createGame(humanPlayer, aiPlayer, difficulty);
 
-        if (game.getPlayerWhite().type() == PlayerType.AI) {
-            game = makeMove(game.getGameId());
-        }
-
         return game;
     }
 
@@ -77,21 +73,21 @@ public class CheckersService {
         return game.getValidMovesForPiece(row, col);
     }
 
-    public Game makeMove(GameId gameId,UUID playerId, int fromRow, int fromCol, int toRow, int toCol) {
+    public Game makeMove(GameId gameId, UUID playerId, int fromRow, int fromCol, int toRow, int toCol) {
         var game = getGame(gameId);
 
 
-        validatePlayerIsHumanPlayer(game, playerId);
+        var currentPlayer = game.getCurrentPlayer();
 
-        validatePlayerOwnsCurrentTurn(game, playerId);
+        if (!currentPlayer.profileId().equals(playerId)) {
+            throw new IllegalArgumentException("It's not your turn");
+        }
 
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
-        if (game.getState() != GameState.IN_PROGRESS) {
-            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
+        if (game.getAiDifficulty()!=null){
+            notifyAiIfGameFinished(game);
         }
-
-
         gameRepository.save(game);
         return game;
     }
@@ -106,43 +102,24 @@ public class CheckersService {
 
             for (int i = 0; i < parts.length - 1; i++) {
 
-                Position from = AiMoveParser.getBackendPosition(parts[i]);
-                Position to = AiMoveParser.getBackendPosition(parts[i + 1]);
+                var from = AiMoveParser.getBackendPosition(parts[i]);
+                var to = AiMoveParser.getBackendPosition(parts[i + 1]);
 
-                game.makeMove( from.row(), from.col(), to.row(), to.col());
+                game.makeMove(from.row(), from.col(), to.row(), to.col());
             }
         }
 
-        if (game.getState() != GameState.IN_PROGRESS) {
-            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
-        }
+        notifyAiIfGameFinished(game);
 
         gameRepository.save(game);
         return game;
     }
 
-    private void validatePlayerIsHumanPlayer(Game game, UUID playerId) {
-        // Check of de playerId overeenkomt met wit of zwart
-        boolean isPlayerWhite = game.getPlayerWhite().type() == PlayerType.HUMAN
-                && game.getPlayerWhite().profileId().equals(playerId);
-        boolean isPlayerBlack = game.getPlayerBlack().type() == PlayerType.HUMAN
-                && game.getPlayerBlack().profileId().equals(playerId);
-
-        if (!isPlayerWhite && !isPlayerBlack) {
-            throw new IllegalArgumentException("Player is not part of this game");
+    private void notifyAiIfGameFinished(Game game) {
+        if (game.getState() != GameState.IN_PROGRESS) {
+            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
         }
     }
 
-    private void validatePlayerOwnsCurrentTurn(Game game, UUID playerId) {
-        var currentPlayer = game.getCurrentPlayer();
-
-        if (currentPlayer.type() != PlayerType.HUMAN) {
-            throw new IllegalStateException("It's not the human player's turn");
-        }
-
-        if (!currentPlayer.profileId().equals(playerId)) {
-            throw new IllegalArgumentException("It's not your turn");
-        }
-    }
 
 }

@@ -1,7 +1,6 @@
 package be.kdg.ip3.checkersbackend.domain.player;
 
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
-import lombok.Getter;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.UUID;
