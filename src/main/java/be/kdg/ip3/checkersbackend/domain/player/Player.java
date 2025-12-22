@@ -5,6 +5,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.UUID;
 
+
 @ValueObject
 public record Player(PlayerType type, UUID profileId, PieceColor color, String displayName) {
 

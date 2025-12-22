@@ -4,6 +4,7 @@ import be.kdg.ip3.checkersbackend.domain.board.Board;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import lombok.Getter;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -17,30 +18,51 @@ import java.util.List;
 public class Game {
     @Identity
     private final GameId gameId;
-
     private Board board;
     private final Player playerWhite;
     private final Player playerBlack;
     private GameState state;
     private PieceColor currentPlayerColor;
     private final List<Move> moves;
+    private final AiDifficulty aiDifficulty;
 
     public Game(Player playerWhite, Player playerBlack) {
-        this(GameId.create(), playerWhite, playerBlack, new Board(), GameState.IN_PROGRESS, PieceColor.WHITE, new ArrayList<>());
+        this(
+                GameId.create(),
+                playerWhite,
+                playerBlack,
+                new Board(),
+                GameState.IN_PROGRESS,
+                PieceColor.WHITE,
+                new ArrayList<>(),
+                null
+
+        );
     }
 
-    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board,
-                GameState state, PieceColor currentPlayerColor, List<Move> moves) {
-        if (playerWhite.color() == playerBlack.color()) {
-            throw new IllegalArgumentException("Players must have different colors");
-        }
+    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty) {
+        this(
+                GameId.create(),
+                playerWhite,
+                playerBlack,
+                new Board(),
+                GameState.IN_PROGRESS,
+                PieceColor.WHITE,
+                new ArrayList<>(),
+                aiDifficulty
+        );
+    }
+
+    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board, GameState state, PieceColor currentPlayerColor, List<Move> moves, AiDifficulty aiDifficulty
+    ) {
         this.gameId = gameId;
-        this.board = board;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
+        this.board = board;
         this.state = state;
         this.currentPlayerColor = currentPlayerColor;
-        this.moves = new ArrayList<>(moves);
+        this.moves = moves;
+        this.aiDifficulty = aiDifficulty;
     }
 
     public List<Position> getPlayablePieces() {
@@ -101,6 +123,21 @@ public class Game {
             currentPlayerColor = PieceColor.WHITE;
         }
     }
+
+    public Player getAiPLayer() {
+        if (playerWhite.type() == PlayerType.AI) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
+
+    public Player getCurrentPlayer() {
+        if (playerWhite.color() == currentPlayerColor) {
+            return playerWhite;
+        }
+        return playerBlack;
+    }
+
 
     private void checkGameOver() {
         var otherPlayerColor = (currentPlayerColor == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;

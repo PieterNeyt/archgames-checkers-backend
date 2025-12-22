@@ -4,5 +4,7 @@ public enum GameState {
     IN_PROGRESS,
     WHITE_WON,
     BLACK_WON,
-    DRAW
+    DRAW,
+    AI_WON,
+    OTHER_PLAYER_WON
 }

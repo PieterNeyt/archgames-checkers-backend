@@ -1,11 +1,10 @@
 package be.kdg.ip3.checkersbackend.infrastructure.game.jpa;
 
+import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
 import be.kdg.ip3.checkersbackend.domain.game.Game;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import be.kdg.ip3.checkersbackend.domain.game.GameState;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
-import be.kdg.ip3.checkersbackend.domain.player.Player;
-import be.kdg.ip3.checkersbackend.domain.player.Move;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -54,13 +53,15 @@ public class JpaGameEntity {
     @Enumerated(EnumType.STRING)
     private PieceColor currentPlayerColor;
 
+    @Enumerated(EnumType.STRING)
+    private AiDifficulty aiDifficulty;
 
 
     public JpaGameEntity() {}
 
     public JpaGameEntity(UUID id, JpaBoardEntity board, JpaPlayerEmbeddable playerWhite,
                          JpaPlayerEmbeddable playerBlack, List<JpaMoveEntity> moves,
-                         GameState state, PieceColor currentPlayerColor) {
+                         GameState state, PieceColor currentPlayerColor, AiDifficulty aiDifficulty) {
         this.id = id;
         this.board = board;
         this.playerWhite = playerWhite;
@@ -68,6 +69,7 @@ public class JpaGameEntity {
         this.moves = moves;
         this.state = state;
         this.currentPlayerColor = currentPlayerColor;
+        this.aiDifficulty = aiDifficulty;
     }
 
     public void updateFromDomain(Game domainGame) {
@@ -91,7 +93,8 @@ public class JpaGameEntity {
                 JpaPlayerEmbeddable.fromDomain(game.getPlayerBlack()),
                 jpaMoves,
                 game.getState(),
-                game.getCurrentPlayerColor()
+                game.getCurrentPlayerColor(),
+                game.getAiDifficulty()
         );
     }
 
@@ -110,7 +113,8 @@ public class JpaGameEntity {
                 board.toDomain(),
                 state,
                 currentPlayerColor,
-                domainMoves
+                domainMoves,
+                aiDifficulty
         );
     }
 }
