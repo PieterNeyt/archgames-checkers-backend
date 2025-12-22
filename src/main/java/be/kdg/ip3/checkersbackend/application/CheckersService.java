@@ -8,8 +8,6 @@ import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
-import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
-import be.kdg.ip3.checkersbackend.domain.player.Position;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
@@ -45,6 +43,7 @@ public class CheckersService {
 
         return game;
     }
+
     private SessionInfo validateSession(UUID sessionId) {
         return launcherClient.validateSession(new SessionId(sessionId));
     }
@@ -99,7 +98,7 @@ public class CheckersService {
 
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
-        if (game.getAiDifficulty()!=null){
+        if (game.getAiDifficulty() != null) {
             notifyAiIfGameFinished(game);
         }
         gameRepository.save(game);

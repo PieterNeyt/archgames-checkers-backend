@@ -1,6 +1,7 @@
 package be.kdg.ip3.checkersbackend;
 
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveResponse;
+import be.kdg.ip3.checkersbackend.api.dto.portal.SessionInfo;
 import be.kdg.ip3.checkersbackend.application.CheckersService;
 import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
@@ -48,6 +49,14 @@ public class CheckersServiceSociableTest {
             //arrange
             var playerId = UUID.randomUUID();
 
+            when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(
+                            UUID.randomUUID(),
+                            UUID.randomUUID(),
+                            playerId,
+                            UUID.randomUUID()
+                    ));
+
             //act
             var game = service.startGameVsAi(playerId, AiDifficulty.MEDIUM);
 
@@ -84,6 +93,15 @@ public class CheckersServiceSociableTest {
         void makeMove_validMove_updatesBoard() {
             //arrange
             var playerId = UUID.randomUUID();
+
+            when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(
+                            UUID.randomUUID(),
+                            UUID.randomUUID(),
+                            playerId,
+                            UUID.randomUUID()
+                    ));
+
             var gameId = new GameId(UUID.randomUUID());
             var game = new Game(Player.createHumanPlayer(playerId, PieceColor.WHITE, "P1"), Player.createAiPlayer(PieceColor.BLACK));
 
@@ -103,12 +121,20 @@ public class CheckersServiceSociableTest {
         void makeMove_wrongPlayer_throwsException() {
             //arrange
             var playerId = UUID.randomUUID();
+
+
             var wrongPlayerId = UUID.randomUUID();
             var gameId = new GameId(UUID.randomUUID());
             var game = new Game(Player.createHumanPlayer(playerId, PieceColor.WHITE, "P1"), Player.createAiPlayer(PieceColor.BLACK));
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-
+            when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(
+                            UUID.randomUUID(),
+                            UUID.randomUUID(),
+                            wrongPlayerId,
+                            UUID.randomUUID()
+                    ));
             //act & assert
             assertThatThrownBy(() -> service.makeMove(gameId, wrongPlayerId, 5, 2, 4, 3))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -123,6 +149,15 @@ public class CheckersServiceSociableTest {
         void makeMove_failsWhenJumpIsAvailable() {
             //arrange
             var playerId = UUID.randomUUID();
+
+            when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(
+                            UUID.randomUUID(),
+                            UUID.randomUUID(),
+                            playerId,
+                            UUID.randomUUID()
+                    ));
+
             var gameId = new GameId(UUID.randomUUID());
             var pWhite = Player.createHumanPlayer(playerId, PieceColor.WHITE, "H");
             var pBlack = Player.createHumanPlayer(UUID.randomUUID(), PieceColor.BLACK, "H2");
@@ -175,6 +210,14 @@ public class CheckersServiceSociableTest {
             when(game.getState()).thenReturn(GameState.WHITE_WON);
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+
+            when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(
+                            UUID.randomUUID(),
+                            UUID.randomUUID(),
+                            pWhite.profileId(),
+                            UUID.randomUUID()
+                    ));
 
             //act
             service.makeMove(gameId, pWhite.profileId(), 5, 2, 4, 3);
