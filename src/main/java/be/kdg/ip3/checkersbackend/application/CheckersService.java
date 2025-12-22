@@ -2,6 +2,8 @@ package be.kdg.ip3.checkersbackend.application;
 
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveRequest;
 import be.kdg.ip3.checkersbackend.api.dto.external.AiMoveResponse;
+import be.kdg.ip3.checkersbackend.api.dto.portal.SessionInfo;
+import be.kdg.ip3.checkersbackend.domain.SessionId;
 import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
@@ -10,6 +12,7 @@ import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.domain.player.Position;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
+import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,23 +26,33 @@ public class CheckersService {
 
     private final GameRepository gameRepository;
     private final AiClient aiClient;
+    private final LauncherClient launcherClient;
 
-    public CheckersService(GameRepository gameRepository, AiClient aiClient) {
+    public CheckersService(GameRepository gameRepository, AiClient aiClient, LauncherClient launcherClient) {
         this.gameRepository = gameRepository;
         this.aiClient = aiClient;
+        this.launcherClient = launcherClient;
     }
 
-    public Game startGameVsAi(UUID playerId, AiDifficulty difficulty) {
+    public Game startGameVsAi(UUID sessionId, AiDifficulty difficulty) {
+        var session = validateSession(sessionId);
+
         //:TODO nog zorgen dat naam van speler wordt meegegeven maar dat is voor multiplayer us
-        var humanPlayer = Player.createHumanPlayer(playerId, getRandomColor(), "Player");
+        var humanPlayer = Player.createHumanPlayer(session.playerId(), getRandomColor(), "Player");
         var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
 
         var game = createGame(humanPlayer, aiPlayer, difficulty);
 
         return game;
     }
+    private SessionInfo validateSession(UUID sessionId) {
+        return launcherClient.validateSession(new SessionId(sessionId));
+    }
 
-    public Game startGameVsPlayer() {
+    public Game startGameVsPlayer(UUID sessionId) {
+
+        var session = validateSession(sessionId);
+
         //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
         var player1 = Player.createHumanPlayer(UUID.randomUUID(), getRandomColor(), "Player 1");
         var player2 = Player.createHumanPlayer(UUID.randomUUID(), player1.color().opposite(), "Player 2");
@@ -73,13 +86,14 @@ public class CheckersService {
         return game.getValidMovesForPiece(row, col);
     }
 
-    public Game makeMove(GameId gameId, UUID playerId, int fromRow, int fromCol, int toRow, int toCol) {
+    public Game makeMove(GameId gameId, UUID sessionId, int fromRow, int fromCol, int toRow, int toCol) {
+
+        var session = validateSession(sessionId);
+
         var game = getGame(gameId);
-
-
         var currentPlayer = game.getCurrentPlayer();
 
-        if (!currentPlayer.profileId().equals(playerId)) {
+        if (!currentPlayer.profileId().equals(session.playerId())) {
             throw new IllegalArgumentException("It's not your turn");
         }
 

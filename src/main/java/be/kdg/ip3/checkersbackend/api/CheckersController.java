@@ -4,10 +4,8 @@ import be.kdg.ip3.checkersbackend.api.dto.game.GameDto;
 import be.kdg.ip3.checkersbackend.api.dto.game.MakeMoveRequest;
 import be.kdg.ip3.checkersbackend.api.dto.game.MoveDto;
 import be.kdg.ip3.checkersbackend.application.CheckersService;
-import be.kdg.ip3.checkersbackend.domain.SessionId;
 import be.kdg.ip3.checkersbackend.domain.game.AiDifficulty;
 import be.kdg.ip3.checkersbackend.domain.game.GameId;
-import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +18,10 @@ import java.util.UUID;
 public class CheckersController {
 
     private final CheckersService checkersService;
-    private final LauncherClient launcherClient;
 
-    public CheckersController(CheckersService checkersService, LauncherClient launcherClient) {
+    public CheckersController(CheckersService checkersService) {
         this.checkersService = checkersService;
-        this.launcherClient = launcherClient;
+
     }
 
     @PostMapping("{sessionId}/start-ai")
@@ -32,8 +29,8 @@ public class CheckersController {
             @PathVariable UUID sessionId,
             @RequestParam AiDifficulty difficulty
     ) {
-        var session = launcherClient.validateSession(new SessionId(sessionId));
-        var game = checkersService.startGameVsAi(session.playerId(), difficulty);
+
+        var game = checkersService.startGameVsAi(sessionId, difficulty);
 
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
@@ -45,9 +42,8 @@ public class CheckersController {
     public ResponseEntity<GameDto> startGameVsPlayer(
             @PathVariable UUID sessionId
     ) {
-        var session = launcherClient.validateSession(new SessionId(sessionId));
 
-        var game = checkersService.startGameVsPlayer();
+        var game = checkersService.startGameVsPlayer(sessionId);
         return ResponseEntity
                 .created(URI.create("/api/checkers/" + game.getGameId().id()))
                 .body(GameDto.fromDomain(game));
@@ -77,11 +73,9 @@ public class CheckersController {
             @PathVariable UUID gameId,
             @RequestBody MakeMoveRequest request) {
 
-        var session = launcherClient.validateSession(new SessionId(sessionId));
-
         var game = checkersService.makeMove(
                 new GameId(gameId),
-                session.playerId(),
+                sessionId,
                 request.fromRow(),
                 request.fromCol(),
                 request.toRow(),
