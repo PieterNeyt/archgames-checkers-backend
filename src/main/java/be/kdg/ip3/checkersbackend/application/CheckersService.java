@@ -8,6 +8,7 @@ import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
@@ -32,43 +33,102 @@ public class CheckersService {
         this.launcherClient = launcherClient;
     }
 
-    public Game startGameVsAi(UUID sessionId, AiDifficulty difficulty) {
+    public Game startSinglePlayer(UUID sessionId, UUID lobbyId, AiDifficulty difficulty) {
         var session = validateSession(sessionId);
 
-        //:TODO nog zorgen dat naam van speler wordt meegegeven maar dat is voor multiplayer us
-        var humanPlayer = Player.createHumanPlayer(session.playerId(), getRandomColor(), "Player");
+        // Check of er al een actieve game is voor deze lobby
+        gameRepository.findActiveGameByLobbyId(lobbyId).ifPresent(g -> {
+            if (g.getAiDifficulty() != null) {
+                var activePlayer = g.getPlayerWhite().type() == PlayerType.HUMAN
+                        ? g.getPlayerWhite() : g.getPlayerBlack();
+                throw new IllegalStateException(
+                        "Wacht tot speler " + activePlayer.displayName() + " klaar is met hun Singleplayer spel."
+                );
+            } else {
+                throw new IllegalStateException(
+                        "Er is een multiplayer spel actief in deze lobby."
+                );
+            }
+        });
+
+        var humanPlayer = Player.createHumanPlayer(
+                session.playerId(),
+                sessionId,
+                getRandomColor(),
+                session.gamerTag()
+        );
+
         var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
 
-        var game = createGame(humanPlayer, aiPlayer, difficulty);
+        Player whitePlayer;
+        Player blackPlayer;
 
-        return game;
-    }
+        if (humanPlayer.color() == PieceColor.WHITE) {
+            whitePlayer = humanPlayer;
+            blackPlayer = aiPlayer;
+        } else {
+            whitePlayer = aiPlayer;
+            blackPlayer = humanPlayer;
+        }
 
-    private SessionInfo validateSession(UUID sessionId) {
-        return launcherClient.validateSession(new SessionId(sessionId));
-    }
-
-    public Game startGameVsPlayer(UUID sessionId) {
-
-        var session = validateSession(sessionId);
-
-        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
-        var player1 = Player.createHumanPlayer(UUID.randomUUID(), getRandomColor(), "Player 1");
-        var player2 = Player.createHumanPlayer(UUID.randomUUID(), player1.color().opposite(), "Player 2");
-
-        return createGame(player1, player2, null);
-    }
-
-    private Game createGame(Player player1, Player player2, AiDifficulty difficulty) {
-        var playerWhite = (player1.color() == PieceColor.WHITE) ? player1 : player2;
-        var playerBlack = (player1.color() == PieceColor.BLACK) ? player1 : player2;
-
-        var game = difficulty != null
-                ? new Game(playerWhite, playerBlack, difficulty)
-                : new Game(playerWhite, playerBlack);
+        var game = new Game(whitePlayer, blackPlayer, difficulty, lobbyId);
 
         gameRepository.save(game);
         return game;
+    }
+
+    public Game joinOrCreateMultiplayer(UUID sessionId, UUID lobbyId) {
+        var session = validateSession(sessionId);
+        var activeGameOpt = gameRepository.findActiveGameByLobbyId(lobbyId);
+
+        if (activeGameOpt.isPresent()) {
+            var game = activeGameOpt.get();
+            if (game.getAiDifficulty() != null) {
+                var activePlayer = game.getPlayerWhite().type() == PlayerType.HUMAN
+                        ? game.getPlayerWhite() : game.getPlayerBlack();
+                throw new IllegalStateException(
+                        "Wacht tot speler " + activePlayer.displayName() +
+                                " klaar is met hun Singleplayer spel."
+                );
+            }
+
+
+            if (game.getState() == GameState.WAITING_FOR_OPPONENT) {
+                if (game.getWaitingPlayer().sessionId().equals(sessionId)) {
+                    return game;
+                }
+
+                game.addPlayerTwo(Player.createHumanPlayer(
+                        session.playerId(),
+                        sessionId,
+                        game.getWaitingPlayer().color().opposite(),
+                        session.gamerTag()
+                ));
+                game.startGame();
+                gameRepository.save(game);
+                return game;
+            } else {
+
+                if (game.getPlayerWhite().sessionId().equals(sessionId) ||
+                        game.getPlayerBlack().sessionId().equals(sessionId)) {
+                    return game;
+                }
+                throw new IllegalStateException("Dit spel is al vol.");
+            }
+        }
+
+        var player1 = Player.createHumanPlayer(
+                session.playerId(),
+                sessionId,
+                getRandomColor(),
+                session.gamerTag()
+        );
+        var game = Game.createWaitingMultiplayer(player1, lobbyId);
+        gameRepository.save(game);
+        return game;
+    }
+    private SessionInfo validateSession(UUID sessionId) {
+        return launcherClient.validateSession(new SessionId(sessionId));
     }
 
     private PieceColor getRandomColor() {
@@ -96,6 +156,9 @@ public class CheckersService {
             throw new IllegalArgumentException("It's not your turn");
         }
 
+        if (!currentPlayer.sessionId().equals(sessionId)) {
+            throw new IllegalArgumentException("Invalid session");
+        }
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
         if (game.getAiDifficulty() != null) {

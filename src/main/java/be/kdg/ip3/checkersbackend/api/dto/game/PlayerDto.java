@@ -13,6 +13,10 @@ public record PlayerDto(
         String displayName
 ) {
     public static PlayerDto fromDomain(Player player) {
+        if (player == null) {
+            return null;
+        }
+
         return new PlayerDto(
                 player.type(),
                 player.profileId(),
@@ -20,4 +24,5 @@ public record PlayerDto(
                 player.displayName()
         );
     }
+
 }

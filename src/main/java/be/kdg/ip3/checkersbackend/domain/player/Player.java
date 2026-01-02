@@ -7,21 +7,26 @@ import java.util.UUID;
 
 
 @ValueObject
-public record Player(PlayerType type, UUID profileId, PieceColor color, String displayName) {
+public record Player(
+        PlayerType type,
+        UUID profileId,
+        UUID sessionId,
+        PieceColor color,
+        String displayName
+) {
 
-    public static Player createHumanPlayer(UUID profileId, PieceColor color, String displayName) {
-        if (profileId == null) {
-            throw new IllegalArgumentException("ProfileId cannot be null for human player");
+    public static Player createHumanPlayer(UUID profileId, UUID sessionId, PieceColor color, String displayName) {
+        if (profileId == null || sessionId == null) {
+            throw new IllegalArgumentException("ProfileId and SessionId cannot be null for human player");
         }
         if (displayName == null || displayName.trim().isEmpty()) {
             throw new IllegalArgumentException("Display name cannot be empty");
         }
-
-        return new Player(PlayerType.HUMAN, profileId, color, displayName);
+        return new Player(PlayerType.HUMAN, profileId, sessionId, color, displayName);
     }
 
     public static Player createAiPlayer(PieceColor color) {
         String aiDisplayName = "AI Player (" + color + ")";
-        return new Player(PlayerType.AI, null, color, aiDisplayName);
+        return new Player(PlayerType.AI, null, null, color, aiDisplayName);
     }
 }

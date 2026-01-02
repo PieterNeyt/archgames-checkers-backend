@@ -23,30 +23,23 @@ public class CheckersController {
         this.checkersService = checkersService;
 
     }
-
-    @PostMapping("{sessionId}/start-ai")
-    public ResponseEntity<GameDto> startGameVsAi(
+    @PostMapping("/{sessionId}/start-singleplayer")
+    public ResponseEntity<GameDto> startSingle(
             @PathVariable UUID sessionId,
+            @RequestParam UUID lobbyId,
             @RequestParam AiDifficulty difficulty
     ) {
-
-        var game = checkersService.startGameVsAi(sessionId, difficulty);
-
-        return ResponseEntity
-                .created(URI.create("/api/checkers/" + game.getGameId().id()))
-                .body(GameDto.fromDomain(game));
+        var game = checkersService.startSinglePlayer(sessionId, lobbyId, difficulty);
+        return ResponseEntity.ok(GameDto.fromDomain(game));
     }
 
-
-    @PostMapping("{sessionId}/start-player")
-    public ResponseEntity<GameDto> startGameVsPlayer(
-            @PathVariable UUID sessionId
+    @PostMapping("/{sessionId}/start-multiplayer")
+    public ResponseEntity<GameDto> startMulti(
+            @PathVariable UUID sessionId,
+            @RequestParam UUID lobbyId
     ) {
-
-        var game = checkersService.startGameVsPlayer(sessionId);
-        return ResponseEntity
-                .created(URI.create("/api/checkers/" + game.getGameId().id()))
-                .body(GameDto.fromDomain(game));
+        var game = checkersService.joinOrCreateMultiplayer(sessionId, lobbyId);
+        return ResponseEntity.ok(GameDto.fromDomain(game));
     }
 
     @GetMapping("/{gameId}")

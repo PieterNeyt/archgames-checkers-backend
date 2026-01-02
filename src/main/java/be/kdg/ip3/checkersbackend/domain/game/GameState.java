@@ -5,6 +5,5 @@ public enum GameState {
     WHITE_WON,
     BLACK_WON,
     DRAW,
-    AI_WON,
-    OTHER_PLAYER_WON
+    WAITING_FOR_OPPONENT,
 }

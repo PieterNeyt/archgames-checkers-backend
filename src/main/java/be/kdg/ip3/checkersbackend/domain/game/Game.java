@@ -12,21 +12,35 @@ import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @AggregateRoot
 public class Game {
+
     @Identity
     private final GameId gameId;
+
     private Board board;
-    private final Player playerWhite;
-    private final Player playerBlack;
+
+    private Player playerWhite;
+    private Player playerBlack;
+
+    private final UUID lobbyId;
+
     private GameState state;
     private PieceColor currentPlayerColor;
+
     private final List<Move> moves;
+
     private final AiDifficulty aiDifficulty;
 
-    public Game(Player playerWhite, Player playerBlack) {
+    /* =========================
+       Constructors
+       ========================= */
+
+    // Singleplayer (tegen AI)
+    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty, UUID lobbyId) {
         this(
                 GameId.create(),
                 playerWhite,
@@ -35,25 +49,22 @@ public class Game {
                 GameState.IN_PROGRESS,
                 PieceColor.WHITE,
                 new ArrayList<>(),
-                null
-
+                aiDifficulty,
+                lobbyId
         );
     }
 
-    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty) {
-        this(
-                GameId.create(),
-                playerWhite,
-                playerBlack,
-                new Board(),
-                GameState.IN_PROGRESS,
-                PieceColor.WHITE,
-                new ArrayList<>(),
-                aiDifficulty
-        );
-    }
-
-    public Game(GameId gameId, Player playerWhite, Player playerBlack, Board board, GameState state, PieceColor currentPlayerColor, List<Move> moves, AiDifficulty aiDifficulty
+    // Interne constructor (JPA / factories)
+    public Game(
+            GameId gameId,
+            Player playerWhite,
+            Player playerBlack,
+            Board board,
+            GameState state,
+            PieceColor currentPlayerColor,
+            List<Move> moves,
+            AiDifficulty aiDifficulty,
+            UUID lobbyId
     ) {
         this.gameId = gameId;
         this.playerWhite = playerWhite;
@@ -63,7 +74,87 @@ public class Game {
         this.currentPlayerColor = currentPlayerColor;
         this.moves = moves;
         this.aiDifficulty = aiDifficulty;
+        this.lobbyId = lobbyId;
     }
+
+    /* =========================
+       Factory methods
+       ========================= */
+
+    public static Game createWaitingMultiplayer(Player playerOne, UUID lobbyId) {
+       if (playerOne.color() == PieceColor.WHITE) {
+           return new Game(
+                   GameId.create(),
+                   playerOne,
+                   null,
+                   new Board(),
+                   GameState.WAITING_FOR_OPPONENT,
+                   PieceColor.WHITE,
+                   new ArrayList<>(),
+                   null,
+                   lobbyId
+           );
+       } else {
+           return new Game(
+                   GameId.create(),
+                   null,
+                   playerOne,
+                   new Board(),
+                   GameState.WAITING_FOR_OPPONENT,
+                   PieceColor.WHITE,
+                   new ArrayList<>(),
+                   null,
+                   lobbyId
+           );
+       }
+    }
+    public Player getWaitingPlayer() {
+        if (state != GameState.WAITING_FOR_OPPONENT) {
+            throw new IllegalStateException("Er is geen wachtende speler in deze game");
+        }
+
+        if (playerWhite != null && playerBlack == null) {
+            return playerWhite;
+        }
+
+        if (playerBlack != null && playerWhite == null) {
+            return playerBlack;
+        }
+
+        throw new IllegalStateException("Ongeldige game state: geen of twee spelers aanwezig");
+    }
+
+    /* =========================
+       Game lifecycle
+       ========================= */
+
+    public void addPlayerTwo(Player playerTwo) {
+        if (state != GameState.WAITING_FOR_OPPONENT) {
+            throw new IllegalStateException("Kan geen speler toevoegen aan lopend spel");
+        }
+        if (playerTwo.color() == PieceColor.WHITE) {
+            this.playerWhite = playerTwo;
+        }else {
+            this.playerBlack = playerTwo;
+        }
+
+    }
+
+    public void startGame() {
+        if (state != GameState.WAITING_FOR_OPPONENT) {
+            throw new IllegalStateException("Game kan niet gestart worden");
+        }
+        this.state = GameState.IN_PROGRESS;
+        this.currentPlayerColor = PieceColor.WHITE;
+    }
+
+    public boolean isSinglePlayer() {
+        return aiDifficulty != null;
+    }
+
+    /* =========================
+       Gameplay
+       ========================= */
 
     public List<Position> getPlayablePieces() {
         return board.getPiecesWithValidMoves(currentPlayerColor);
@@ -71,7 +162,7 @@ public class Game {
 
     public List<Move> getValidMovesForPiece(int row, int col) {
         if (state != GameState.IN_PROGRESS) {
-            throw new IllegalStateException("Game is not in progress");
+            throw new IllegalStateException("Game is niet bezig");
         }
 
         var pieceMoves = board.getValidMoves(row, col, currentPlayerColor);
@@ -88,7 +179,7 @@ public class Game {
 
     public void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (state != GameState.IN_PROGRESS) {
-            throw new IllegalStateException("Game is not in progress");
+            throw new IllegalStateException("Game is niet bezig");
         }
 
         var validMoves = getValidMovesForPiece(fromRow, fromCol);
@@ -96,7 +187,7 @@ public class Game {
         var requestedMove = validMoves.stream()
                 .filter(m -> m.toRow() == toRow && m.toCol() == toCol)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid move or capture mandatory"));
+                .orElseThrow(() -> new IllegalArgumentException("Ongeldige zet"));
 
         var result = board.executeMove(requestedMove);
 
@@ -105,7 +196,8 @@ public class Game {
 
         if (result.executedMove().isJump()) {
             var pieceAtDest = this.board.getSquare(toRow, toCol).piece();
-            var additionalJumps = this.board.getValidJumps(toRow, toCol, pieceAtDest, currentPlayerColor);
+            var additionalJumps =
+                    this.board.getValidJumps(toRow, toCol, pieceAtDest, currentPlayerColor);
 
             if (!additionalJumps.isEmpty()) {
                 return;
@@ -117,30 +209,34 @@ public class Game {
     }
 
     private void switchTurn() {
-        if (currentPlayerColor == PieceColor.WHITE) {
-            currentPlayerColor = PieceColor.BLACK;
-        } else {
-            currentPlayerColor = PieceColor.WHITE;
-        }
+        currentPlayerColor =
+                (currentPlayerColor == PieceColor.WHITE)
+                        ? PieceColor.BLACK
+                        : PieceColor.WHITE;
     }
 
-    public Player getAiPLayer() {
+    public Player getCurrentPlayer() {
+        return (playerWhite.color() == currentPlayerColor)
+                ? playerWhite
+                : playerBlack;
+    }
+
+    public Player getAiPlayer() {
         if (playerWhite.type() == PlayerType.AI) {
             return playerWhite;
         }
         return playerBlack;
     }
 
-    public Player getCurrentPlayer() {
-        if (playerWhite.color() == currentPlayerColor) {
-            return playerWhite;
-        }
-        return playerBlack;
-    }
-
+    /* =========================
+       Game end
+       ========================= */
 
     private void checkGameOver() {
-        var otherPlayerColor = (currentPlayerColor == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
+        var otherPlayerColor =
+                (currentPlayerColor == PieceColor.WHITE)
+                        ? PieceColor.BLACK
+                        : PieceColor.WHITE;
 
         var currentPlayerHasMoves = board.hasMovesAvailable(currentPlayerColor);
         var otherPlayerHasMoves = board.hasMovesAvailable(otherPlayerColor);
@@ -148,7 +244,9 @@ public class Game {
         if (!currentPlayerHasMoves && !otherPlayerHasMoves) {
             state = GameState.DRAW;
         } else if (!currentPlayerHasMoves) {
-            state = (otherPlayerColor == PieceColor.WHITE) ? GameState.WHITE_WON : GameState.BLACK_WON;
+            state = (otherPlayerColor == PieceColor.WHITE)
+                    ? GameState.WHITE_WON
+                    : GameState.BLACK_WON;
         }
     }
 }

@@ -38,7 +38,7 @@ public record AiMoveRequest(
                 "CHECKERS",
                 AiBoardMapper.toAiBoard(game.getBoard()),
                 game.getCurrentPlayerColor().toString().substring(0, 1),
-                game.getAiPLayer().color().toString().substring(0, 1),
+                game.getAiPlayer().color().toString().substring(0, 1),
                 "SINGLE",
                 game.getAiDifficulty().name(),
                 mappedMoves.isEmpty() ? null : mappedMoves

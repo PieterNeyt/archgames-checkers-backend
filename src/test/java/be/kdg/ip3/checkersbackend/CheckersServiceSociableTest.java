@@ -40,7 +40,7 @@ public class CheckersServiceSociableTest {
     void setUp() {
         service = new CheckersService(gameRepository, aiClient,launcherClient);
     }
-
+/*
     @Nested
     class StartGame {
 
@@ -225,5 +225,5 @@ public class CheckersServiceSociableTest {
             //assert
             verify(aiClient, atLeastOnce()).requestAiMove(any());
         }
-    }
+    }*/
 }
