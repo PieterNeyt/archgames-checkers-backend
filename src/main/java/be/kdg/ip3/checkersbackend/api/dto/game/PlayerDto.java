@@ -10,8 +10,9 @@ public record PlayerDto(
         PlayerType type,
         UUID profileId,
         PieceColor color,
-        String displayName
-) {
+        String displayName,
+        UUID sessionId
+        ) {
     public static PlayerDto fromDomain(Player player) {
         if (player == null) {
             return null;
@@ -21,7 +22,8 @@ public record PlayerDto(
                 player.type(),
                 player.profileId(),
                 player.color(),
-                player.displayName()
+                player.displayName(),
+                player.sessionId()
         );
     }
 

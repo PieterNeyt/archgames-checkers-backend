@@ -147,18 +147,13 @@ public class CheckersService {
 
     public Game makeMove(GameId gameId, UUID sessionId, int fromRow, int fromCol, int toRow, int toCol) {
 
-        var session = validateSession(sessionId);
-
         var game = getGame(gameId);
         var currentPlayer = game.getCurrentPlayer();
 
-        if (!currentPlayer.profileId().equals(session.playerId())) {
+        if (!currentPlayer.sessionId().equals(sessionId)) {
             throw new IllegalArgumentException("It's not your turn");
         }
 
-        if (!currentPlayer.sessionId().equals(sessionId)) {
-            throw new IllegalArgumentException("Invalid session");
-        }
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
         if (game.getAiDifficulty() != null) {
