@@ -47,11 +47,11 @@ public class CheckersService {
                 var activePlayer = g.getPlayerWhite().type() == PlayerType.HUMAN
                         ? g.getPlayerWhite() : g.getPlayerBlack();
                 throw new IllegalStateException(
-                        "Wacht tot speler " + activePlayer.displayName() + " klaar is met hun Singleplayer spel."
+                        "Wait until " + activePlayer.displayName() + " is done with their game!"
                 );
             } else {
                 throw new IllegalStateException(
-                        "Er is een multiplayer spel actief in deze lobby."
+                        "There is already an active game for this lobby"
                 );
             }
         });
@@ -92,8 +92,8 @@ public class CheckersService {
                 var activePlayer = game.getPlayerWhite().type() == PlayerType.HUMAN
                         ? game.getPlayerWhite() : game.getPlayerBlack();
                 throw new IllegalStateException(
-                        "Wacht tot speler " + activePlayer.displayName() +
-                                " klaar is met hun Singleplayer spel."
+                        "Wait until " + activePlayer.displayName() +
+                                " is done with their  game!"
                 );
             }
 
@@ -118,7 +118,7 @@ public class CheckersService {
                         game.getPlayerBlack().sessionId().equals(sessionId)) {
                     return game;
                 }
-                throw new IllegalStateException("Dit spel is al vol.");
+                throw new IllegalStateException("This game is full");
             }
         }
 
