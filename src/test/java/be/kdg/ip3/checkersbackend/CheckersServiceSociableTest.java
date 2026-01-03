@@ -8,6 +8,7 @@ import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
+import be.kdg.ip3.checkersbackend.portal.messaging.sender.CheckersMessagePublisher;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -33,12 +34,12 @@ public class CheckersServiceSociableTest {
     private AiClient aiClient;
     @Mock
     private LauncherClient launcherClient;
-
-    private CheckersService service;
+    @Mock
+    private CheckersMessagePublisher checkersMessagePublisher;
 
     @BeforeEach
     void setUp() {
-        service = new CheckersService(gameRepository, aiClient,launcherClient);
+     //   service = new CheckersService(gameRepository, aiClient,launcherClient,checkersMessagePublisher);
     }
 /*
     @Nested
