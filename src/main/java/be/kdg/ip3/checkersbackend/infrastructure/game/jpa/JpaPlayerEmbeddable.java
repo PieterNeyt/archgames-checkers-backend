@@ -18,7 +18,7 @@ public class JpaPlayerEmbeddable {
 
     @Column(name = "profile_id")
     private UUID profileId;
-    @Column(name = "session_id")
+    @Column(name = "session_id",  nullable = false)
     private UUID sessionId;
 
     @Enumerated(EnumType.STRING)

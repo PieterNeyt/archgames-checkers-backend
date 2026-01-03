@@ -9,6 +9,7 @@ import be.kdg.ip3.checkersbackend.domain.game.GameId;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,7 +30,8 @@ public class CheckersController {
             @RequestParam AiDifficulty difficulty
     ) {
         var game = checkersService.startSinglePlayer(sessionId, lobbyId, difficulty);
-        return ResponseEntity.ok(GameDto.fromDomain(game));
+        var location = URI.create("/api/checkers/games/" + game.getGameId());
+        return ResponseEntity.created(location).body(GameDto.fromDomain(game));
     }
 
     @PostMapping("/{sessionId}/start-multiplayer")
@@ -38,7 +40,8 @@ public class CheckersController {
             @RequestParam UUID lobbyId
     ) {
         var game = checkersService.joinOrCreateMultiplayer(sessionId, lobbyId);
-        return ResponseEntity.ok(GameDto.fromDomain(game));
+        var location = URI.create("/api/checkers/games/" + game.getGameId());
+        return ResponseEntity.created(location).body(GameDto.fromDomain(game));
     }
 
     @GetMapping("/{gameId}")

@@ -27,7 +27,7 @@ public class Game {
     private Player playerBlack;
 
     private final UUID lobbyId;
-    private final UUID gameTypeId;
+    private final UUID platformGameId;
 
     private GameState state;
     private PieceColor currentPlayerColor;
@@ -36,21 +36,38 @@ public class Game {
 
     private final AiDifficulty aiDifficulty;
 
-    // Singleplayer (tegen AI)
-    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty, UUID lobbyId,UUID gameTypeId ) {
-        this(
+    public static Game createSinglePlayer(
+            Player humanPlayer,
+            Player aiPlayer,
+            AiDifficulty difficulty,
+            UUID lobbyId,
+            UUID platformGameId
+    ) {
+        Player white;
+        Player black;
+
+        if (humanPlayer.color() == PieceColor.WHITE) {
+            white = humanPlayer;
+            black = aiPlayer;
+        } else {
+            white = aiPlayer;
+            black = humanPlayer;
+        }
+
+        return new Game(
                 GameId.create(),
-                playerWhite,
-                playerBlack,
+                white,
+                black,
                 new Board(),
                 GameState.IN_PROGRESS,
                 PieceColor.WHITE,
                 new ArrayList<>(),
-                aiDifficulty,
+                difficulty,
                 lobbyId,
-                gameTypeId
+                platformGameId
         );
     }
+
 
     public Game(
             GameId gameId,
@@ -62,7 +79,7 @@ public class Game {
             List<Move> moves,
             AiDifficulty aiDifficulty,
             UUID lobbyId,
-            UUID gameTypeId
+            UUID platformGameId
     ) {
         this.gameId = gameId;
         this.playerWhite = playerWhite;
@@ -73,39 +90,37 @@ public class Game {
         this.moves = moves;
         this.aiDifficulty = aiDifficulty;
         this.lobbyId = lobbyId;
-        this.gameTypeId = gameTypeId;
+        this.platformGameId = platformGameId;
     }
 
-    public static Game createWaitingMultiplayer(Player playerOne, UUID lobbyId,UUID gameTypeId) {
-       if (playerOne.color() == PieceColor.WHITE) {
-           return new Game(
-                   GameId.create(),
-                   playerOne,
-                   null,
-                   new Board(),
-                   GameState.WAITING_FOR_OPPONENT,
-                   PieceColor.WHITE,
-                   new ArrayList<>(),
-                   null,
-                   lobbyId,
-                   gameTypeId
+    public static Game createWaitingMultiplayer(
+            Player playerOne,
+            UUID lobbyId,
+            UUID gameTypeId
+    ) {
+        Player playerWhite = null;
+        Player playerBlack = null;
 
-           );
-       } else {
-           return new Game(
-                   GameId.create(),
-                   null,
-                   playerOne,
-                   new Board(),
-                   GameState.WAITING_FOR_OPPONENT,
-                   PieceColor.WHITE,
-                   new ArrayList<>(),
-                   null,
-                   lobbyId,
-                   gameTypeId
-           );
-       }
+        if (playerOne.color() == PieceColor.WHITE) {
+            playerWhite = playerOne;
+        } else {
+            playerBlack = playerOne;
+        }
+
+        return new Game(
+                GameId.create(),
+                playerWhite,
+                playerBlack,
+                new Board(),
+                GameState.WAITING_FOR_OPPONENT,
+                PieceColor.WHITE,
+                new ArrayList<>(),
+                null,
+                lobbyId,
+                gameTypeId
+        );
     }
+
     public Player getWaitingPlayer() {
         if (state != GameState.WAITING_FOR_OPPONENT) {
             throw new IllegalStateException("There is no waiting player in this game");
@@ -142,6 +157,33 @@ public class Game {
         this.state = GameState.IN_PROGRESS;
         this.currentPlayerColor = PieceColor.WHITE;
     }
+    public boolean isActive() {
+        return state == GameState.IN_PROGRESS
+                || state == GameState.WAITING_FOR_OPPONENT;
+    }
+
+    public boolean isSinglePlayer() {
+        return aiDifficulty != null;
+    }
+
+    public Player getHumanPlayer() {
+        if (playerWhite.type() == PlayerType.HUMAN) return playerWhite;
+        if (playerBlack.type() == PlayerType.HUMAN) return playerBlack;
+        throw new IllegalStateException("No human player in this game");
+    }
+    public void assertNoNewGameAllowed() {
+        if (!isActive()) return;
+
+        if (isSinglePlayer()) {
+            throw new IllegalStateException(
+                    "Wait until " + getHumanPlayer().displayName() + " is done with their game!"
+            );
+        }
+
+        throw new IllegalStateException(
+                "There is already an active game for this lobby"
+        );
+    }
 
     public List<Position> getPlayablePieces() {
         return board.getPiecesWithValidMoves(currentPlayerColor);
@@ -164,6 +206,35 @@ public class Game {
         return pieceMoves;
     }
 
+    public boolean canPlayerJoin(UUID sessionId) {
+        if (state != GameState.WAITING_FOR_OPPONENT) {
+            return false;
+        }
+        return !getWaitingPlayer().sessionId().equals(sessionId);
+    }
+
+    public boolean isPlayerInGame(UUID sessionId) {
+        if (playerWhite != null && playerWhite.sessionId().equals(sessionId)) {
+            return true;
+        }
+        if (playerBlack != null && playerBlack.sessionId().equals(sessionId)) {
+            return true;
+        }
+        return false;
+    }
+
+    public void joinAsSecondPlayer(Player player) {
+        if (state != GameState.WAITING_FOR_OPPONENT) {
+            throw new IllegalStateException("Game is not waiting for a second player");
+        }
+
+        if (getWaitingPlayer().sessionId().equals(player.sessionId())) {
+            throw new IllegalStateException("Player is already in this game");
+        }
+
+        addPlayerTwo(player);
+        startGame();
+    }
     public void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (state != GameState.IN_PROGRESS) {
             throw new IllegalStateException("Game is not in progress");

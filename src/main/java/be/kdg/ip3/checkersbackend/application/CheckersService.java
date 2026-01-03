@@ -41,20 +41,8 @@ public class CheckersService {
     public Game startSinglePlayer(UUID sessionId, UUID lobbyId, AiDifficulty difficulty) {
         var session = validateSession(sessionId);
 
-        // Check of er al een actieve game is voor deze lobby
-        gameRepository.findActiveGameByLobbyId(lobbyId).ifPresent(g -> {
-            if (g.getAiDifficulty() != null) {
-                var activePlayer = g.getPlayerWhite().type() == PlayerType.HUMAN
-                        ? g.getPlayerWhite() : g.getPlayerBlack();
-                throw new IllegalStateException(
-                        "Wait until " + activePlayer.displayName() + " is done with their game!"
-                );
-            } else {
-                throw new IllegalStateException(
-                        "There is already an active game for this lobby"
-                );
-            }
-        });
+        gameRepository.findActiveGameByLobbyId(lobbyId)
+                .ifPresent(Game::assertNoNewGameAllowed);
 
         var humanPlayer = Player.createHumanPlayer(
                 session.playerId(),
@@ -65,70 +53,62 @@ public class CheckersService {
 
         var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
 
-        Player whitePlayer;
-        Player blackPlayer;
-
-        if (humanPlayer.color() == PieceColor.WHITE) {
-            whitePlayer = humanPlayer;
-            blackPlayer = aiPlayer;
-        } else {
-            whitePlayer = aiPlayer;
-            blackPlayer = humanPlayer;
-        }
-
-        var game = new Game(whitePlayer, blackPlayer, difficulty, lobbyId,session.gameId());
+        var game = Game.createSinglePlayer(
+                humanPlayer,
+                aiPlayer,
+                difficulty,
+                lobbyId,
+                session.gameId()
+        );
 
         gameRepository.save(game);
         return game;
     }
 
+
     public Game joinOrCreateMultiplayer(UUID sessionId, UUID lobbyId) {
         var session = validateSession(sessionId);
         var activeGameOpt = gameRepository.findActiveGameByLobbyId(lobbyId);
 
-        if (activeGameOpt.isPresent()) {
-            var game = activeGameOpt.get();
-            if (game.getAiDifficulty() != null) {
-                var activePlayer = game.getPlayerWhite().type() == PlayerType.HUMAN
-                        ? game.getPlayerWhite() : game.getPlayerBlack();
-                throw new IllegalStateException(
-                        "Wait until " + activePlayer.displayName() +
-                                " is done with their  game!"
-                );
-            }
-
-
-            if (game.getState() == GameState.WAITING_FOR_OPPONENT) {
-                if (game.getWaitingPlayer().sessionId().equals(sessionId)) {
-                    return game;
-                }
-
-                game.addPlayerTwo(Player.createHumanPlayer(
-                        session.playerId(),
-                        sessionId,
-                        game.getWaitingPlayer().color().opposite(),
-                        session.gamerTag()
-                ));
-                game.startGame();
-                gameRepository.save(game);
-                return game;
-            } else {
-
-                if (game.getPlayerWhite().sessionId().equals(sessionId) ||
-                        game.getPlayerBlack().sessionId().equals(sessionId)) {
-                    return game;
-                }
-                throw new IllegalStateException("This game is full");
-            }
+        if (activeGameOpt.isEmpty()) {
+            return createNewMultiplayerGame(session, lobbyId);
         }
 
-        var player1 = Player.createHumanPlayer(
+        var game = activeGameOpt.get();
+
+        if (game.isPlayerInGame(sessionId)) {
+            return game;
+        }
+
+        if (game.isSinglePlayer()) {
+            throw new IllegalStateException(
+                    "Wait until " + game.getHumanPlayer().displayName() + " is done with their game!"
+            );
+        }
+
+        if (game.canPlayerJoin(sessionId)) {
+            var newPlayer = Player.createHumanPlayer(
+                    session.playerId(),
+                    sessionId,
+                    game.getWaitingPlayer().color().opposite(),
+                    session.gamerTag()
+            );
+            game.joinAsSecondPlayer(newPlayer);
+            gameRepository.save(game);
+            return game;
+        }
+
+        throw new IllegalStateException("This game is full");
+    }
+
+    private Game createNewMultiplayerGame(SessionInfo session, UUID lobbyId) {
+        var player = Player.createHumanPlayer(
                 session.playerId(),
-                sessionId,
+                session.sessionId(),
                 getRandomColor(),
                 session.gamerTag()
         );
-        var game = Game.createWaitingMultiplayer(player1, lobbyId,session.gameId());
+        var game = Game.createWaitingMultiplayer(player, lobbyId, session.gameId());
         gameRepository.save(game);
         return game;
     }
@@ -198,8 +178,8 @@ public class CheckersService {
         var loser = game.getLoser();
 
         if (game.isDraw()) {
-            publishAchievementForPlayer(game.getPlayerWhite(), "drew_a_game", game.getGameTypeId());
-            publishAchievementForPlayer(game.getPlayerBlack(), "drew_a_game", game.getGameTypeId());
+            publishAchievementForPlayer(game.getPlayerWhite(), "drew_a_game", game.getPlatformGameId());
+            publishAchievementForPlayer(game.getPlayerBlack(), "drew_a_game", game.getPlatformGameId());
         } else {
 
             checkersMessagePublisher.publishGameResult(
@@ -210,14 +190,14 @@ public class CheckersService {
                     )
             );
 
-            publishAchievementForPlayer(winner, "won_a_game", game.getGameTypeId());
-            publishAchievementForPlayer(loser, "lost_a_game", game.getGameTypeId());
+            publishAchievementForPlayer(winner, "won_a_game", game.getPlatformGameId());
+            publishAchievementForPlayer(loser, "lost_a_game", game.getPlatformGameId());
         }
 
         if (game.getAiPlayer() != null) {
             notifyAiIfGameFinished(game);
-            publishAchievementForPlayer(winner, "won_a_game_vs_ai", game.getGameTypeId());
-            publishAchievementForPlayer(loser, "lost_a_game_vs_ai", game.getGameTypeId());
+            publishAchievementForPlayer(winner, "won_a_game_vs_ai", game.getPlatformGameId());
+            publishAchievementForPlayer(loser, "lost_a_game_vs_ai", game.getPlatformGameId());
         }
     }
 

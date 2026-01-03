@@ -25,10 +25,10 @@ public class JpaGameEntity {
     @JoinColumn(name = "board_id")
     private JpaBoardEntity board;
 
-    @Column(name = "lobby_id")
+    @Column(name = "lobby_id", nullable = false)
     private UUID lobbyId;
     @Column(nullable = false)
-    private UUID gameTypeId;
+    private UUID platformGameId;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "type", column = @Column(name = "player_white_type")),
@@ -67,7 +67,7 @@ public class JpaGameEntity {
 
     public JpaGameEntity(UUID id, JpaBoardEntity board, JpaPlayerEmbeddable playerWhite,
                          JpaPlayerEmbeddable playerBlack, List<JpaMoveEntity> moves,
-                         GameState state, PieceColor currentPlayerColor, AiDifficulty aiDifficulty,UUID lobbyId, UUID gameTypeId) {
+                         GameState state, PieceColor currentPlayerColor, AiDifficulty aiDifficulty,UUID lobbyId, UUID platformGameId) {
         this.id = id;
         this.board = board;
         this.playerWhite = playerWhite;
@@ -77,7 +77,7 @@ public class JpaGameEntity {
         this.currentPlayerColor = currentPlayerColor;
         this.aiDifficulty = aiDifficulty;
         this.lobbyId = lobbyId;
-        this.gameTypeId = gameTypeId;
+        this.platformGameId = platformGameId;
     }
 
     public void updateFromDomain(Game domainGame) {
@@ -112,7 +112,7 @@ public class JpaGameEntity {
                 game.getCurrentPlayerColor(),
                 game.getAiDifficulty(),
                 game.getLobbyId(),
-                game.getGameTypeId()
+                game.getPlatformGameId()
         );
     }
 
@@ -134,7 +134,7 @@ public class JpaGameEntity {
                 domainMoves,
                 aiDifficulty,
                 lobbyId,
-                gameTypeId
+                platformGameId
         );
     }
 
