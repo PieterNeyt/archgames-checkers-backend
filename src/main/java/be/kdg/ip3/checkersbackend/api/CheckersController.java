@@ -30,7 +30,7 @@ public class CheckersController {
             @RequestParam AiDifficulty difficulty
     ) {
         var game = checkersService.startSinglePlayer(sessionId, lobbyId, difficulty);
-        var location = URI.create("/api/checkers/games/" + game.getGameId());
+        var location = URI.create("/api/checkers/games/" + game.getGameId().id());
         return ResponseEntity.created(location).body(GameDto.fromDomain(game));
     }
 
@@ -40,7 +40,7 @@ public class CheckersController {
             @RequestParam UUID lobbyId
     ) {
         var game = checkersService.joinOrCreateMultiplayer(sessionId, lobbyId);
-        var location = URI.create("/api/checkers/games/" + game.getGameId());
+        var location = URI.create("/api/checkers/games/" + game.getGameId().id());
         return ResponseEntity.created(location).body(GameDto.fromDomain(game));
     }
 
