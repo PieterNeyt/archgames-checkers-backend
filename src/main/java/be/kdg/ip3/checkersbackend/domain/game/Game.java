@@ -27,6 +27,7 @@ public class Game {
     private Player playerBlack;
 
     private final UUID lobbyId;
+    private final UUID gameTypeId;
 
     private GameState state;
     private PieceColor currentPlayerColor;
@@ -35,12 +36,8 @@ public class Game {
 
     private final AiDifficulty aiDifficulty;
 
-    /* =========================
-       Constructors
-       ========================= */
-
     // Singleplayer (tegen AI)
-    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty, UUID lobbyId) {
+    public Game(Player playerWhite, Player playerBlack, AiDifficulty aiDifficulty, UUID lobbyId,UUID gameTypeId ) {
         this(
                 GameId.create(),
                 playerWhite,
@@ -50,11 +47,11 @@ public class Game {
                 PieceColor.WHITE,
                 new ArrayList<>(),
                 aiDifficulty,
-                lobbyId
+                lobbyId,
+                gameTypeId
         );
     }
 
-    // Interne constructor (JPA / factories)
     public Game(
             GameId gameId,
             Player playerWhite,
@@ -64,7 +61,8 @@ public class Game {
             PieceColor currentPlayerColor,
             List<Move> moves,
             AiDifficulty aiDifficulty,
-            UUID lobbyId
+            UUID lobbyId,
+            UUID gameTypeId
     ) {
         this.gameId = gameId;
         this.playerWhite = playerWhite;
@@ -75,13 +73,10 @@ public class Game {
         this.moves = moves;
         this.aiDifficulty = aiDifficulty;
         this.lobbyId = lobbyId;
+        this.gameTypeId = gameTypeId;
     }
 
-    /* =========================
-       Factory methods
-       ========================= */
-
-    public static Game createWaitingMultiplayer(Player playerOne, UUID lobbyId) {
+    public static Game createWaitingMultiplayer(Player playerOne, UUID lobbyId,UUID gameTypeId) {
        if (playerOne.color() == PieceColor.WHITE) {
            return new Game(
                    GameId.create(),
@@ -92,7 +87,9 @@ public class Game {
                    PieceColor.WHITE,
                    new ArrayList<>(),
                    null,
-                   lobbyId
+                   lobbyId,
+                   gameTypeId
+
            );
        } else {
            return new Game(
@@ -104,13 +101,14 @@ public class Game {
                    PieceColor.WHITE,
                    new ArrayList<>(),
                    null,
-                   lobbyId
+                   lobbyId,
+                   gameTypeId
            );
        }
     }
     public Player getWaitingPlayer() {
         if (state != GameState.WAITING_FOR_OPPONENT) {
-            throw new IllegalStateException("Er is geen wachtende speler in deze game");
+            throw new IllegalStateException("There is no waiting player in this game");
         }
 
         if (playerWhite != null && playerBlack == null) {
@@ -121,16 +119,13 @@ public class Game {
             return playerBlack;
         }
 
-        throw new IllegalStateException("Ongeldige game state: geen of twee spelers aanwezig");
+        throw new IllegalStateException("Invalid game state: none or both players present");
     }
 
-    /* =========================
-       Game lifecycle
-       ========================= */
 
     public void addPlayerTwo(Player playerTwo) {
         if (state != GameState.WAITING_FOR_OPPONENT) {
-            throw new IllegalStateException("Kan geen speler toevoegen aan lopend spel");
+            throw new IllegalStateException("Can't add a player to an ongoing game");
         }
         if (playerTwo.color() == PieceColor.WHITE) {
             this.playerWhite = playerTwo;
@@ -142,19 +137,11 @@ public class Game {
 
     public void startGame() {
         if (state != GameState.WAITING_FOR_OPPONENT) {
-            throw new IllegalStateException("Game kan niet gestart worden");
+            throw new IllegalStateException("Game couldn't be started");
         }
         this.state = GameState.IN_PROGRESS;
         this.currentPlayerColor = PieceColor.WHITE;
     }
-
-    public boolean isSinglePlayer() {
-        return aiDifficulty != null;
-    }
-
-    /* =========================
-       Gameplay
-       ========================= */
 
     public List<Position> getPlayablePieces() {
         return board.getPiecesWithValidMoves(currentPlayerColor);
@@ -162,7 +149,7 @@ public class Game {
 
     public List<Move> getValidMovesForPiece(int row, int col) {
         if (state != GameState.IN_PROGRESS) {
-            throw new IllegalStateException("Game is niet bezig");
+            throw new IllegalStateException("Game is not in progress");
         }
 
         var pieceMoves = board.getValidMoves(row, col, currentPlayerColor);
@@ -179,7 +166,7 @@ public class Game {
 
     public void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (state != GameState.IN_PROGRESS) {
-            throw new IllegalStateException("Game is niet bezig");
+            throw new IllegalStateException("Game is not in progress");
         }
 
         var validMoves = getValidMovesForPiece(fromRow, fromCol);
@@ -187,7 +174,7 @@ public class Game {
         var requestedMove = validMoves.stream()
                 .filter(m -> m.toRow() == toRow && m.toCol() == toCol)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Ongeldige zet"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid move"));
 
         var result = board.executeMove(requestedMove);
 
@@ -224,13 +211,12 @@ public class Game {
     public Player getAiPlayer() {
         if (playerWhite.type() == PlayerType.AI) {
             return playerWhite;
+        } else if (playerBlack.type() == PlayerType.AI) {
+            return playerBlack;
         }
-        return playerBlack;
+        return null;
     }
 
-    /* =========================
-       Game end
-       ========================= */
 
     private void checkGameOver() {
         var otherPlayerColor =
@@ -248,5 +234,31 @@ public class Game {
                     ? GameState.WHITE_WON
                     : GameState.BLACK_WON;
         }
+    }
+
+    public Player getWinner() {
+        return switch (state) {
+            case WHITE_WON -> playerWhite;
+            case BLACK_WON -> playerBlack;
+            case DRAW -> null;
+            case IN_PROGRESS, WAITING_FOR_OPPONENT ->
+                    throw new IllegalStateException("Game hasn't finished");
+            default -> throw new IllegalStateException("invalid game state: " + state);
+        };
+    }
+
+    public Player getLoser() {
+        return switch (state) {
+            case WHITE_WON -> playerBlack;
+            case BLACK_WON -> playerWhite;
+            case DRAW -> null;
+            case IN_PROGRESS, WAITING_FOR_OPPONENT ->
+                    throw new IllegalStateException("Game hasn't finished");
+            default -> throw new IllegalStateException("invalid game: " + state);
+        };
+    }
+
+    public boolean isDraw() {
+        return state == GameState.DRAW;
     }
 }

@@ -11,6 +11,9 @@ import be.kdg.ip3.checkersbackend.domain.player.Player;
 import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
+import be.kdg.ip3.checkersbackend.portal.messaging.config.AchievementUnlockedMessage;
+import be.kdg.ip3.checkersbackend.portal.messaging.config.CheckersGameResultMessage;
+import be.kdg.ip3.checkersbackend.portal.messaging.sender.CheckersMessagePublisher;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,11 +29,13 @@ public class CheckersService {
     private final GameRepository gameRepository;
     private final AiClient aiClient;
     private final LauncherClient launcherClient;
+    private final CheckersMessagePublisher checkersMessagePublisher;
 
-    public CheckersService(GameRepository gameRepository, AiClient aiClient, LauncherClient launcherClient) {
+    public CheckersService(GameRepository gameRepository, AiClient aiClient, LauncherClient launcherClient, CheckersMessagePublisher checkersMessagePublisher) {
         this.gameRepository = gameRepository;
         this.aiClient = aiClient;
         this.launcherClient = launcherClient;
+        this.checkersMessagePublisher = checkersMessagePublisher;
     }
 
     public Game startSinglePlayer(UUID sessionId, UUID lobbyId, AiDifficulty difficulty) {
@@ -71,7 +76,7 @@ public class CheckersService {
             blackPlayer = humanPlayer;
         }
 
-        var game = new Game(whitePlayer, blackPlayer, difficulty, lobbyId);
+        var game = new Game(whitePlayer, blackPlayer, difficulty, lobbyId,session.gameId());
 
         gameRepository.save(game);
         return game;
@@ -123,7 +128,7 @@ public class CheckersService {
                 getRandomColor(),
                 session.gamerTag()
         );
-        var game = Game.createWaitingMultiplayer(player1, lobbyId);
+        var game = Game.createWaitingMultiplayer(player1, lobbyId,session.gameId());
         gameRepository.save(game);
         return game;
     }
@@ -156,9 +161,7 @@ public class CheckersService {
 
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
-        if (game.getAiDifficulty() != null) {
-            notifyAiIfGameFinished(game);
-        }
+        handleGameFinished(game);
         gameRepository.save(game);
         return game;
     }
@@ -180,16 +183,54 @@ public class CheckersService {
             }
         }
 
-        notifyAiIfGameFinished(game);
+        handleGameFinished(game);
 
         gameRepository.save(game);
         return game;
     }
+    private void handleGameFinished(Game game) {
+
+        if (game.getState() == GameState.IN_PROGRESS) {
+            return;
+        }
+
+        var winner = game.getWinner();
+        var loser = game.getLoser();
+
+        if (game.isDraw()) {
+            publishAchievementForPlayer(game.getPlayerWhite(), "drew_a_game", game.getGameTypeId());
+            publishAchievementForPlayer(game.getPlayerBlack(), "drew_a_game", game.getGameTypeId());
+        } else {
+
+            checkersMessagePublisher.publishGameResult(
+                    new CheckersGameResultMessage(
+                            winner.sessionId(),
+                            winner.displayName(),
+                            java.time.LocalDateTime.now()
+                    )
+            );
+
+            publishAchievementForPlayer(winner, "won_a_game", game.getGameTypeId());
+            publishAchievementForPlayer(loser, "lost_a_game", game.getGameTypeId());
+        }
+
+        if (game.getAiPlayer() != null) {
+            notifyAiIfGameFinished(game);
+            publishAchievementForPlayer(winner, "won_a_game_vs_ai", game.getGameTypeId());
+            publishAchievementForPlayer(loser, "lost_a_game_vs_ai", game.getGameTypeId());
+        }
+    }
+
+    private void publishAchievementForPlayer(Player player, String achievementId, UUID gameUuid) {
+        if (player != null && player.type() == PlayerType.HUMAN) {
+            checkersMessagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage(achievementId, player.profileId(), gameUuid)
+            );
+        }
+    }
 
     private void notifyAiIfGameFinished(Game game) {
-        if (game.getState() != GameState.IN_PROGRESS) {
-            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
-        }
+        aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
     }
 
 

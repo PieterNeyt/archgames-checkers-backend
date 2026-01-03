@@ -1,5 +1,6 @@
 package be.kdg.ip3.checkersbackend.portal.messaging.sender;
 
+import be.kdg.ip3.checkersbackend.portal.messaging.config.AchievementUnlockedMessage;
 import be.kdg.ip3.checkersbackend.portal.messaging.config.CheckersGameResultMessage;
 import be.kdg.ip3.checkersbackend.portal.messaging.config.RabbitMQTopology;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class CheckersMessagePublisher {
     private final RabbitTemplate rabbitTemplate;
     private final RabbitMQTopology rabbitMQTopology;
+
     public CheckersMessagePublisher(RabbitTemplate rabbitTemplate, RabbitMQTopology rabbitMQTopology) {
         this.rabbitTemplate = rabbitTemplate;
         this.rabbitMQTopology = rabbitMQTopology;
@@ -22,6 +24,16 @@ public class CheckersMessagePublisher {
                 "checkers.game.result",
                 message
         );
-        log.info("Published Checkers game result message: {}", message);
     }
+
+    public void publishAchievementUnlock(AchievementUnlockedMessage message) {
+
+        rabbitTemplate.convertAndSend(
+                rabbitMQTopology.ACHIEVEMENT_EXCHANGE_NAME,
+                "checkers.achievement.unlock",
+                message
+        );
+
+    }
+
 }
