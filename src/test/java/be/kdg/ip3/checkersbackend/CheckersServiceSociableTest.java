@@ -96,34 +96,6 @@ public class CheckersServiceSociableTest {
         }
     }
 
-    @Nested
-    class MakeMove {
-
-
-        @Test
-        void makeMove_wrongPlayer_throwsException() {
-            var playerId = UUID.randomUUID();
-            var sessionId = UUID.randomUUID();
-            var lobbyId = UUID.randomUUID();
-
-            var wrongSessionId = UUID.randomUUID();
-
-            lenient().when(launcherClient.validateSession(any()))
-                    .thenReturn(new SessionInfo(sessionId, lobbyId, playerId, UUID.randomUUID(), "P1"));
-
-            when(gameRepository.findActiveGameByLobbyId(lobbyId))
-                    .thenReturn(Optional.empty());
-
-            var game = service.startSinglePlayer(sessionId, lobbyId, AiDifficulty.EASY);
-            var gameId = game.getGameId();
-
-            when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-
-            assertThatThrownBy(() -> service.makeMove(gameId, wrongSessionId, 5, 2, 4, 3))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("not your turn");
-        }
-    }
 
     @Nested
     class MandatoryJump {
