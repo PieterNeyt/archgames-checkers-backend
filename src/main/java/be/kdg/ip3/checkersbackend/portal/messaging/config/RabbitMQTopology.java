@@ -14,6 +14,8 @@ public class RabbitMQTopology {
     public String CHECKERS_QUEUE_NAME ;
     @Value("${achievement.exchange.name}")
     public String ACHIEVEMENT_EXCHANGE_NAME;
+    @Value("${register.exchange.name}")
+    public String REGISTER_GAME_EXCHANGE;
 
     @Bean
     TopicExchange checkersExchange() {
