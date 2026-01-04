@@ -7,6 +7,7 @@ import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.messaging.sender.CheckersMessagePublisher;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
@@ -28,61 +29,68 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class CheckersServiceSociableTest {
 
-    @Mock
-    private GameRepository gameRepository;
-    @Mock
-    private AiClient aiClient;
-    @Mock
-    private LauncherClient launcherClient;
-    @Mock
-    private CheckersMessagePublisher checkersMessagePublisher;
+    private CheckersService service;
+
+    @Mock private GameRepository gameRepository;
+    @Mock private AiClient aiClient;
+    @Mock private LauncherClient launcherClient;
+    @Mock private CheckersMessagePublisher checkersMessagePublisher;
 
     @BeforeEach
     void setUp() {
-     //   service = new CheckersService(gameRepository, aiClient,launcherClient,checkersMessagePublisher);
+        service = new CheckersService(gameRepository, aiClient, launcherClient, checkersMessagePublisher);
     }
-/*
+
     @Nested
     class StartGame {
 
         @Test
         void startGameVsAi_shouldSaveGame() {
-            //arrange
             var playerId = UUID.randomUUID();
+            var sessionId = UUID.randomUUID();
+            var lobbyId = UUID.randomUUID();
 
-            when(launcherClient.validateSession(any()))
+            lenient().when(launcherClient.validateSession(any()))
                     .thenReturn(new SessionInfo(
-                            UUID.randomUUID(),
-                            UUID.randomUUID(),
+                            sessionId,
+                            lobbyId,
                             playerId,
-                            UUID.randomUUID()
+                            UUID.randomUUID(),
+                            "TestPlayer"
                     ));
 
-            //act
-            var game = service.startGameVsAi(playerId, AiDifficulty.MEDIUM);
+            var game = service.startSinglePlayer(sessionId, lobbyId, AiDifficulty.MEDIUM);
 
-            //Assert
             assertThat(game).isNotNull();
             verify(gameRepository).save(any(Game.class));
         }
 
-
         @Test
         void startGameVsAi_AiIsWhite_AiMovesImmediately() {
-            //arrange
             var playerId = UUID.randomUUID();
+            var sessionId = UUID.randomUUID();
 
-            var aiPlayer = Player.createAiPlayer(PieceColor.WHITE);
-            var humanPlayer = Player.createHumanPlayer(playerId, PieceColor.BLACK, "Human");
-            var game = new Game(aiPlayer, humanPlayer, AiDifficulty.EASY);
+            // human player
+            var humanPlayer = Player.createHumanPlayer(playerId, sessionId, PieceColor.BLACK, "Human");
+
+            Player aiPlayerMock = mock(Player.class);
+            when(aiPlayerMock.type()).thenReturn(PlayerType.AI);
+            when(aiPlayerMock.color()).thenReturn(PieceColor.WHITE);
+
+            var game = Game.createSinglePlayer(
+                    humanPlayer,
+                    aiPlayerMock,
+                    AiDifficulty.EASY,
+                    UUID.randomUUID(),
+                    UUID.randomUUID()
+            );
 
             when(gameRepository.findById(any())).thenReturn(Optional.of(game));
-            when(aiClient.requestAiMove(any())).thenReturn(new AiMoveResponse("test", "IN_PROGRESS", "9-13"));
+            when(aiClient.requestAiMove(any()))
+                    .thenReturn(new AiMoveResponse("test", "IN_PROGRESS", "9-13"));
 
-            //act
             service.makeMove(game.getGameId());
 
-            //assert
             assertThat(game.getCurrentPlayerColor()).isEqualTo(PieceColor.BLACK);
             assertThat(game.getMoves()).hasSize(1);
         }
@@ -90,141 +98,78 @@ public class CheckersServiceSociableTest {
 
     @Nested
     class MakeMove {
-        @Test
-        void makeMove_validMove_updatesBoard() {
-            //arrange
-            var playerId = UUID.randomUUID();
 
-            when(launcherClient.validateSession(any()))
-                    .thenReturn(new SessionInfo(
-                            UUID.randomUUID(),
-                            UUID.randomUUID(),
-                            playerId,
-                            UUID.randomUUID()
-                    ));
-
-            var gameId = new GameId(UUID.randomUUID());
-            var game = new Game(Player.createHumanPlayer(playerId, PieceColor.WHITE, "P1"), Player.createAiPlayer(PieceColor.BLACK));
-
-            when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-
-            //act
-            service.makeMove(gameId, playerId, 5, 2, 4, 3);
-
-            //assert
-            assertThat(game.getBoard().getSquare(5, 2).isEmpty()).isTrue();
-            assertThat(game.getBoard().getSquare(4, 3).piece()).isNotNull();
-            assertThat(game.getCurrentPlayerColor()).isEqualTo(PieceColor.BLACK);
-            verify(gameRepository).save(game);
-        }
 
         @Test
         void makeMove_wrongPlayer_throwsException() {
-            //arrange
             var playerId = UUID.randomUUID();
+            var sessionId = UUID.randomUUID();
+            var lobbyId = UUID.randomUUID();
 
+            var wrongSessionId = UUID.randomUUID();
 
-            var wrongPlayerId = UUID.randomUUID();
-            var gameId = new GameId(UUID.randomUUID());
-            var game = new Game(Player.createHumanPlayer(playerId, PieceColor.WHITE, "P1"), Player.createAiPlayer(PieceColor.BLACK));
+            lenient().when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(sessionId, lobbyId, playerId, UUID.randomUUID(), "P1"));
+
+            when(gameRepository.findActiveGameByLobbyId(lobbyId))
+                    .thenReturn(Optional.empty());
+
+            var game = service.startSinglePlayer(sessionId, lobbyId, AiDifficulty.EASY);
+            var gameId = game.getGameId();
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-            when(launcherClient.validateSession(any()))
-                    .thenReturn(new SessionInfo(
-                            UUID.randomUUID(),
-                            UUID.randomUUID(),
-                            wrongPlayerId,
-                            UUID.randomUUID()
-                    ));
-            //act & assert
-            assertThatThrownBy(() -> service.makeMove(gameId, wrongPlayerId, 5, 2, 4, 3))
+
+            assertThatThrownBy(() -> service.makeMove(gameId, wrongSessionId, 5, 2, 4, 3))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not your turn");
         }
     }
 
-
     @Nested
     class MandatoryJump {
+
         @Test
         void makeMove_failsWhenJumpIsAvailable() {
-            //arrange
             var playerId = UUID.randomUUID();
+            var sessionId = UUID.randomUUID();
 
-            when(launcherClient.validateSession(any()))
-                    .thenReturn(new SessionInfo(
-                            UUID.randomUUID(),
-                            UUID.randomUUID(),
-                            playerId,
-                            UUID.randomUUID()
-                    ));
+            lenient().when(launcherClient.validateSession(any()))
+                    .thenReturn(new SessionInfo(sessionId, UUID.randomUUID(), playerId, UUID.randomUUID(), "TestPlayer"));
 
             var gameId = new GameId(UUID.randomUUID());
-            var pWhite = Player.createHumanPlayer(playerId, PieceColor.WHITE, "H");
-            var pBlack = Player.createHumanPlayer(UUID.randomUUID(), PieceColor.BLACK, "H2");
-            var game = new Game(pWhite, pBlack);
+            var pWhite = Player.createHumanPlayer(playerId, sessionId, PieceColor.WHITE, "H");
+            var pBlack = Player.createHumanPlayer(UUID.randomUUID(), UUID.randomUUID(), PieceColor.BLACK, "H2");
+            var game = Game.createWaitingMultiplayer(pWhite, UUID.randomUUID(), UUID.randomUUID());
+            game.joinAsSecondPlayer(pBlack);
 
             game.makeMove(5, 2, 4, 3); // Wit
             game.makeMove(2, 5, 3, 4); // Zwart
 
-
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
 
-            //act & assert
-            assertThatThrownBy(() -> service.makeMove(gameId, playerId, 5, 0, 4, 1))
+            assertThatThrownBy(() -> service.makeMove(gameId, sessionId, 5, 0, 4, 1))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("capture mandatory");
+                    .hasMessageContaining("Invalid move");
         }
 
         @Test
         void getValidMoves_onlyReturnsJumps() {
-            //arrange
             var gameId = new GameId(UUID.randomUUID());
-            var pWhite = Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "H");
-            var pBlack = Player.createHumanPlayer(UUID.randomUUID(), PieceColor.BLACK, "H2");
-            var game = new Game(pWhite, pBlack);
+            var pWhite = Player.createHumanPlayer(UUID.randomUUID(), UUID.randomUUID(), PieceColor.WHITE, "H");
+            var pBlack = Player.createHumanPlayer(UUID.randomUUID(), UUID.randomUUID(), PieceColor.BLACK, "H2");
+            var game = Game.createWaitingMultiplayer(pWhite, UUID.randomUUID(), UUID.randomUUID());
+            game.joinAsSecondPlayer(pBlack);
 
             game.makeMove(5, 2, 4, 3);
             game.makeMove(2, 5, 3, 4);
 
             when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
 
-            //act
             var moves = service.getValidMoves(gameId, 4, 3);
 
-            //assert
             assertThat(moves).allMatch(Move::isJump);
             assertThat(moves).hasSize(1);
         }
     }
 
-    @Nested
-    class GameOver {
-        @Test
-        void notifyAi_whenGameIsFinished() {
-            //arrange
-            var gameId = new GameId(UUID.randomUUID());
-            var pWhite = Player.createHumanPlayer(UUID.randomUUID(), PieceColor.WHITE, "H");
-            var pBlack = Player.createAiPlayer(PieceColor.BLACK);
-
-            var game = spy(new Game(pWhite, pBlack, AiDifficulty.MEDIUM));
-            when(game.getState()).thenReturn(GameState.WHITE_WON);
-
-            when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
-
-            when(launcherClient.validateSession(any()))
-                    .thenReturn(new SessionInfo(
-                            UUID.randomUUID(),
-                            UUID.randomUUID(),
-                            pWhite.profileId(),
-                            UUID.randomUUID()
-                    ));
-
-            //act
-            service.makeMove(gameId, pWhite.profileId(), 5, 2, 4, 3);
-
-            //assert
-            verify(aiClient, atLeastOnce()).requestAiMove(any());
-        }
-    }*/
 }
