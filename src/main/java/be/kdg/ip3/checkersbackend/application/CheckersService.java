@@ -46,6 +46,9 @@ public class CheckersService {
         if (activeGameOpt.isPresent()) {
             var existingGame = activeGameOpt.get();
             if (existingGame.isPlayerInGame(session.playerId())) {
+                var existingPlayer = existingGame.getPlayerById(session.playerId());
+                existingGame.reconnectPlayer(existingPlayer.profileId(),sessionId);
+                gameRepository.save(existingGame);
                 return existingGame;
             }
             existingGame.assertNoNewGameAllowed();
