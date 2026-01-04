@@ -1,9 +1,6 @@
 package be.kdg.ip3.checkersbackend.portal.messaging.sender;
 
-import be.kdg.ip3.checkersbackend.portal.messaging.config.AchievementUnlockedMessage;
-import be.kdg.ip3.checkersbackend.portal.messaging.config.CheckersGameResultMessage;
-import be.kdg.ip3.checkersbackend.portal.messaging.config.RabbitMQTopology;
-import be.kdg.ip3.checkersbackend.portal.messaging.config.RegisterGameMessage;
+import be.kdg.ip3.checkersbackend.portal.messaging.config.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +9,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -58,6 +57,44 @@ public class CheckersMessagePublisher {
     }
     @EventListener(ApplicationReadyEvent.class)
     public void publishGameRegister() {
+        var achievements = List.of(
+                new AchievementCommand(
+                        UUID.randomUUID(),
+                        "won_a_game_vs_ai",
+                        "AI Verslagen",
+                        "Je hebt een wedstrijd gewonnen tegen de AI. Netjes gespeeld!",
+                        "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
+                ),
+                new AchievementCommand(
+                        UUID.randomUUID(),
+                        "lost_a_game_vs_ai",
+                        "AI Was Te Sterk",
+                        "Je verloor een wedstrijd tegen de AI. Volgende keer beter!",
+                        "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
+                ),
+                new AchievementCommand(
+                        UUID.randomUUID(),
+                        "lost_a_game",
+                        "Nederlaag",
+                        "Je hebt een wedstrijd verloren tegen een andere speler.",
+                        "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
+                ),
+                new AchievementCommand(
+                        UUID.randomUUID(),
+                        "won_a_game",
+                        "Overwinning",
+                        "Gefeliciteerd! Je hebt een wedstrijd gewonnen.",
+                        "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
+                ),
+                new AchievementCommand(
+                        UUID.randomUUID(),
+                        "drew_a_game",
+                        "Gelijkspel",
+                        "De wedstrijd eindigde in een gelijkspel. Spannend tot het einde!",
+                        "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
+                )
+        );
+
         var message = new RegisterGameMessage(
                 title,
                 description,
@@ -65,8 +102,10 @@ public class CheckersMessagePublisher {
                 gameUrl,
                 BigDecimal.valueOf(price),
                 genre,
-                maxLobbySize
+                maxLobbySize,
+                achievements
         );
+
         rabbitTemplate.convertAndSend(
                 rabbitMQTopology.REGISTER_GAME_EXCHANGE,
                 "register.game.checkers",

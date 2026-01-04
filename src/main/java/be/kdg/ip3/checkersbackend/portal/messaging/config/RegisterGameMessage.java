@@ -1,6 +1,7 @@
 package be.kdg.ip3.checkersbackend.portal.messaging.config;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record RegisterGameMessage(
         String title,
@@ -9,6 +10,7 @@ public record RegisterGameMessage(
         String gameUrl,
         BigDecimal price,
         String genre,
-        int maxlobbysize
+        int maxlobbysize,
+        List<AchievementCommand>  achievements
 ) {
 }
