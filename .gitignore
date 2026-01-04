@@ -114,4 +114,5 @@ generated-sources/
 application-*.yaml
 application-*.yml
 
-
+Se/src/main/resources/secret.properties
+src/main/resources/secret.properties

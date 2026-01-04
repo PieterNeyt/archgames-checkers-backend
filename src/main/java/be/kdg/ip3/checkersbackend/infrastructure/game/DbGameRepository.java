@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Transactional
@@ -36,6 +37,12 @@ public class DbGameRepository implements GameRepository {
     @Override
     public Optional<Game> findById(GameId gameId) {
         return jpaGameRepository.findById(gameId.id())
+                .map(JpaGameEntity::toDomain);
+    }
+    @Override
+    public Optional<Game> findActiveGameByLobbyId(UUID lobbyId) {
+        return jpaGameRepository
+                .findActiveGameByLobbyId(lobbyId)
                 .map(JpaGameEntity::toDomain);
     }
 }

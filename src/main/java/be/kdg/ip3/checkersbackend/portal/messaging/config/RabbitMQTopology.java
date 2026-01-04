@@ -12,9 +12,8 @@ public class RabbitMQTopology {
     public String CHECKERS_EXCHANGE_NAME ;
     @Value("${checkers.queue.name}")
     public String CHECKERS_QUEUE_NAME ;
-
-
-    // Order topology
+    @Value("${achievement.exchange.name}")
+    public String ACHIEVEMENT_EXCHANGE_NAME;
 
     @Bean
     TopicExchange checkersExchange() {
@@ -30,4 +29,21 @@ public class RabbitMQTopology {
     Binding checkersQueueToCheckersExchangeBinding() {
         return BindingBuilder.bind(checkersQueue()).to(checkersExchange()).with("checkers.game.*");
     }
+
+    @Bean
+    TopicExchange achievementExchange() {
+        return new TopicExchange(ACHIEVEMENT_EXCHANGE_NAME);
+    }
+    @Bean
+    Queue achievementQueue() {
+        return QueueBuilder.nonDurable("achievement-queue").build();
+    }
+
+    @Bean
+    Binding achievementQueueToAchievementExchangeBinding() {
+        return BindingBuilder.bind(achievementQueue())
+                .to(achievementExchange())
+                .with("*.achievement.unlock");
+    }
+
 }

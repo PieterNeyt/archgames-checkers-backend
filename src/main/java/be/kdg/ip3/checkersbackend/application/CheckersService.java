@@ -8,8 +8,12 @@ import be.kdg.ip3.checkersbackend.domain.game.*;
 import be.kdg.ip3.checkersbackend.domain.piece.PieceColor;
 import be.kdg.ip3.checkersbackend.domain.player.Move;
 import be.kdg.ip3.checkersbackend.domain.player.Player;
+import be.kdg.ip3.checkersbackend.domain.player.PlayerType;
 import be.kdg.ip3.checkersbackend.portal.ai.AiClient;
 import be.kdg.ip3.checkersbackend.portal.ai.AiMoveParser;
+import be.kdg.ip3.checkersbackend.portal.messaging.config.AchievementUnlockedMessage;
+import be.kdg.ip3.checkersbackend.portal.messaging.config.CheckersGameResultMessage;
+import be.kdg.ip3.checkersbackend.portal.messaging.sender.CheckersMessagePublisher;
 import be.kdg.ip3.checkersbackend.portal.rest.LauncherClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,50 +29,86 @@ public class CheckersService {
     private final GameRepository gameRepository;
     private final AiClient aiClient;
     private final LauncherClient launcherClient;
+    private final CheckersMessagePublisher checkersMessagePublisher;
 
-    public CheckersService(GameRepository gameRepository, AiClient aiClient, LauncherClient launcherClient) {
+    public CheckersService(GameRepository gameRepository, AiClient aiClient, LauncherClient launcherClient, CheckersMessagePublisher checkersMessagePublisher) {
         this.gameRepository = gameRepository;
         this.aiClient = aiClient;
         this.launcherClient = launcherClient;
+        this.checkersMessagePublisher = checkersMessagePublisher;
     }
 
-    public Game startGameVsAi(UUID sessionId, AiDifficulty difficulty) {
+    public Game startSinglePlayer(UUID sessionId, UUID lobbyId, AiDifficulty difficulty) {
         var session = validateSession(sessionId);
 
-        //:TODO nog zorgen dat naam van speler wordt meegegeven maar dat is voor multiplayer us
-        var humanPlayer = Player.createHumanPlayer(session.playerId(), getRandomColor(), "Player");
+        var activeGameOpt = gameRepository.findActiveGameByLobbyId(lobbyId);
+
+        if (activeGameOpt.isPresent()) {
+            var existingGame = activeGameOpt.get();
+            if (existingGame.isPlayerInGame(session.playerId())) {
+                var existingPlayer = existingGame.getPlayerById(session.playerId());
+                existingGame.reconnectPlayer(existingPlayer.profileId(),sessionId);
+                gameRepository.save(existingGame);
+                return existingGame;
+            }
+            existingGame.assertNoNewGameAllowed();
+        }
+
+        var humanPlayer = Player.createHumanPlayer(session.playerId(), sessionId, getRandomColor(), session.gamerTag());
         var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
-
-        var game = createGame(humanPlayer, aiPlayer, difficulty);
-
-        return game;
-    }
-
-    private SessionInfo validateSession(UUID sessionId) {
-        return launcherClient.validateSession(new SessionId(sessionId));
-    }
-
-    public Game startGameVsPlayer(UUID sessionId) {
-
-        var session = validateSession(sessionId);
-
-        //:TODO Tijdelijk nog een random UUID voor speler, later vervangen door echte gebruiker
-        var player1 = Player.createHumanPlayer(UUID.randomUUID(), getRandomColor(), "Player 1");
-        var player2 = Player.createHumanPlayer(UUID.randomUUID(), player1.color().opposite(), "Player 2");
-
-        return createGame(player1, player2, null);
-    }
-
-    private Game createGame(Player player1, Player player2, AiDifficulty difficulty) {
-        var playerWhite = (player1.color() == PieceColor.WHITE) ? player1 : player2;
-        var playerBlack = (player1.color() == PieceColor.BLACK) ? player1 : player2;
-
-        var game = difficulty != null
-                ? new Game(playerWhite, playerBlack, difficulty)
-                : new Game(playerWhite, playerBlack);
+        var game = Game.createSinglePlayer(humanPlayer, aiPlayer, difficulty, lobbyId, session.gameId());
 
         gameRepository.save(game);
         return game;
+    }
+
+
+    public Game joinOrCreateMultiplayer(UUID sessionId, UUID lobbyId) {
+        var session = validateSession(sessionId);
+        var activeGameOpt = gameRepository.findActiveGameByLobbyId(lobbyId);
+
+        if (activeGameOpt.isEmpty()) {
+            return createNewMultiplayerGame(session, lobbyId);
+        }
+
+        var game = activeGameOpt.get();
+
+        if (game.isPlayerInGame(session.playerId())) {
+            var existingPlayer = game.getPlayerById(session.playerId());
+            game.reconnectPlayer(existingPlayer.profileId(),sessionId);
+            gameRepository.save(game);
+            return game;
+        }
+
+        if (game.isSinglePlayer()) {
+            throw new IllegalStateException(
+                    "Wait until " + game.getHumanPlayer().displayName() + " is done with their game!"
+            );
+        }
+
+        if (game.canPlayerJoin(sessionId)) {
+            var newPlayer = Player.createHumanPlayer(session.playerId(), sessionId, game.getWaitingPlayer().color().opposite(), session.gamerTag());
+            game.joinAsSecondPlayer(newPlayer);
+            gameRepository.save(game);
+            return game;
+        }
+
+        throw new IllegalStateException("This game is full");
+    }
+
+    private Game createNewMultiplayerGame(SessionInfo session, UUID lobbyId) {
+        var player = Player.createHumanPlayer(
+                session.playerId(),
+                session.sessionId(),
+                getRandomColor(),
+                session.gamerTag()
+        );
+        var game = Game.createWaitingMultiplayer(player, lobbyId, session.gameId());
+        gameRepository.save(game);
+        return game;
+    }
+    private SessionInfo validateSession(UUID sessionId) {
+        return launcherClient.validateSession(new SessionId(sessionId));
     }
 
     private PieceColor getRandomColor() {
@@ -87,20 +127,15 @@ public class CheckersService {
 
     public Game makeMove(GameId gameId, UUID sessionId, int fromRow, int fromCol, int toRow, int toCol) {
 
-        var session = validateSession(sessionId);
-
         var game = getGame(gameId);
         var currentPlayer = game.getCurrentPlayer();
-
-        if (!currentPlayer.profileId().equals(session.playerId())) {
+        if (!currentPlayer.sessionId().equals(sessionId)) {
             throw new IllegalArgumentException("It's not your turn");
         }
 
         game.makeMove(fromRow, fromCol, toRow, toCol);
 
-        if (game.getAiDifficulty() != null) {
-            notifyAiIfGameFinished(game);
-        }
+        handleGameFinished(game);
         gameRepository.save(game);
         return game;
     }
@@ -122,16 +157,54 @@ public class CheckersService {
             }
         }
 
-        notifyAiIfGameFinished(game);
+        handleGameFinished(game);
 
         gameRepository.save(game);
         return game;
     }
+    private void handleGameFinished(Game game) {
+
+        if (game.getState() == GameState.IN_PROGRESS) {
+            return;
+        }
+
+        var winner = game.getWinner();
+        var loser = game.getLoser();
+
+        if (game.isDraw()) {
+            publishAchievementForPlayer(game.getPlayerWhite(), "drew_a_game", game.getPlatformGameId());
+            publishAchievementForPlayer(game.getPlayerBlack(), "drew_a_game", game.getPlatformGameId());
+        } else {
+
+            checkersMessagePublisher.publishGameResult(
+                    new CheckersGameResultMessage(
+                            winner.sessionId(),
+                            winner.displayName(),
+                            java.time.LocalDateTime.now()
+                    )
+            );
+
+            publishAchievementForPlayer(winner, "won_a_game", game.getPlatformGameId());
+            publishAchievementForPlayer(loser, "lost_a_game", game.getPlatformGameId());
+        }
+
+        if (game.getAiPlayer() != null) {
+            notifyAiIfGameFinished(game);
+            publishAchievementForPlayer(winner, "won_a_game_vs_ai", game.getPlatformGameId());
+            publishAchievementForPlayer(loser, "lost_a_game_vs_ai", game.getPlatformGameId());
+        }
+    }
+
+    private void publishAchievementForPlayer(Player player, String achievementId, UUID gameUuid) {
+        if (player != null && player.type() == PlayerType.HUMAN) {
+            checkersMessagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage(achievementId, player.profileId(), gameUuid)
+            );
+        }
+    }
 
     private void notifyAiIfGameFinished(Game game) {
-        if (game.getState() != GameState.IN_PROGRESS) {
-            aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
-        }
+        aiClient.requestAiMove(AiMoveRequest.fromDomain(game));
     }
 
 

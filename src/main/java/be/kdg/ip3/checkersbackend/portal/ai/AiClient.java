@@ -16,6 +16,9 @@ public class AiClient {
     @Value("${ai.service.url}")
     private String aiServiceUrl;
 
+    @Value("${ai.service.api-key}")
+    private String apiKey;
+
     public AiClient(RestClient restClient) {
         this.restClient = restClient;
     }
@@ -23,6 +26,7 @@ public class AiClient {
     public AiMoveResponse requestAiMove(AiMoveRequest dto) {
         return restClient.post()
                 .uri(aiServiceUrl)
+                .header("X-API-Key", apiKey)
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(dto)
                 .retrieve()
