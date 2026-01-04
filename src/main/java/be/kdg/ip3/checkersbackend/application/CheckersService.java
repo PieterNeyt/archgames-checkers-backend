@@ -41,25 +41,19 @@ public class CheckersService {
     public Game startSinglePlayer(UUID sessionId, UUID lobbyId, AiDifficulty difficulty) {
         var session = validateSession(sessionId);
 
-        gameRepository.findActiveGameByLobbyId(lobbyId)
-                .ifPresent(Game::assertNoNewGameAllowed);
+        var activeGameOpt = gameRepository.findActiveGameByLobbyId(lobbyId);
 
-        var humanPlayer = Player.createHumanPlayer(
-                session.playerId(),
-                sessionId,
-                getRandomColor(),
-                session.gamerTag()
-        );
+        if (activeGameOpt.isPresent()) {
+            var existingGame = activeGameOpt.get();
+            if (existingGame.isPlayerInGame(session.playerId())) {
+                return existingGame;
+            }
+            existingGame.assertNoNewGameAllowed();
+        }
 
+        var humanPlayer = Player.createHumanPlayer(session.playerId(), sessionId, getRandomColor(), session.gamerTag());
         var aiPlayer = Player.createAiPlayer(humanPlayer.color().opposite());
-
-        var game = Game.createSinglePlayer(
-                humanPlayer,
-                aiPlayer,
-                difficulty,
-                lobbyId,
-                session.gameId()
-        );
+        var game = Game.createSinglePlayer(humanPlayer, aiPlayer, difficulty, lobbyId, session.gameId());
 
         gameRepository.save(game);
         return game;
@@ -76,7 +70,10 @@ public class CheckersService {
 
         var game = activeGameOpt.get();
 
-        if (game.isPlayerInGame(sessionId)) {
+        if (game.isPlayerInGame(session.playerId())) {
+            var existingPlayer = game.getPlayerById(session.playerId());
+            game.reconnectPlayer(existingPlayer.profileId(),sessionId);
+            gameRepository.save(game);
             return game;
         }
 
@@ -87,12 +84,7 @@ public class CheckersService {
         }
 
         if (game.canPlayerJoin(sessionId)) {
-            var newPlayer = Player.createHumanPlayer(
-                    session.playerId(),
-                    sessionId,
-                    game.getWaitingPlayer().color().opposite(),
-                    session.gamerTag()
-            );
+            var newPlayer = Player.createHumanPlayer(session.playerId(), sessionId, game.getWaitingPlayer().color().opposite(), session.gamerTag());
             game.joinAsSecondPlayer(newPlayer);
             gameRepository.save(game);
             return game;
@@ -134,7 +126,6 @@ public class CheckersService {
 
         var game = getGame(gameId);
         var currentPlayer = game.getCurrentPlayer();
-
         if (!currentPlayer.sessionId().equals(sessionId)) {
             throw new IllegalArgumentException("It's not your turn");
         }

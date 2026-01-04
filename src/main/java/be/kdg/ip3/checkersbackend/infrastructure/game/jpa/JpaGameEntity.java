@@ -84,11 +84,11 @@ public class JpaGameEntity {
         this.state = domainGame.getState();
         this.currentPlayerColor = domainGame.getCurrentPlayerColor();
 
-        if (this.playerWhite == null && domainGame.getPlayerWhite() != null) {
+        if (domainGame.getPlayerWhite() != null) {
             this.playerWhite = JpaPlayerEmbeddable.fromDomain(domainGame.getPlayerWhite());
         }
 
-       if (this.playerBlack == null && domainGame.getPlayerBlack() != null) {
+        if (domainGame.getPlayerBlack() != null) {
             this.playerBlack = JpaPlayerEmbeddable.fromDomain(domainGame.getPlayerBlack());
         }
 
@@ -96,6 +96,7 @@ public class JpaGameEntity {
         this.moves.clear();
         domainGame.getMoves().forEach(move -> this.moves.add(JpaMoveEntity.fromDomain(move)));
     }
+
 
     public static JpaGameEntity fromDomain(Game game) {
 

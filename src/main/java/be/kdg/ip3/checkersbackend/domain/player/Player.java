@@ -29,4 +29,22 @@ public record Player(
         String aiDisplayName = "AI Player (" + color + ")";
         return new Player(PlayerType.AI, null, null, color, aiDisplayName);
     }
+
+    public Player withSessionId(UUID newSessionId) {
+        if (this.type != PlayerType.HUMAN) {
+            throw new IllegalStateException("Only human players have a session");
+        }
+        if (newSessionId == null) {
+            throw new IllegalArgumentException("SessionId cannot be null");
+        }
+
+        return new Player(
+                this.type,
+                this.profileId,
+                newSessionId,
+                this.color,
+                this.displayName
+        );
+    }
+
 }

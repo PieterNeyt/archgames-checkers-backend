@@ -149,6 +149,21 @@ public class Game {
         }
 
     }
+    public void reconnectPlayer(UUID profileId, UUID newSessionId) {
+        Player player = getPlayerById(profileId);
+        replacePlayer(player.withSessionId(newSessionId));
+    }
+
+    private void replacePlayer(Player updatedPlayer) {
+        if (updatedPlayer.color() == PieceColor.WHITE) {
+            playerWhite = updatedPlayer;
+        } else if (updatedPlayer.color() == PieceColor.BLACK) {
+            playerBlack = updatedPlayer;
+        } else {
+            throw new IllegalStateException("Unknown player color");
+        }
+    }
+
 
     public void startGame() {
         if (state != GameState.WAITING_FOR_OPPONENT) {
@@ -213,14 +228,23 @@ public class Game {
         return !getWaitingPlayer().sessionId().equals(sessionId);
     }
 
-    public boolean isPlayerInGame(UUID sessionId) {
-        if (playerWhite != null && playerWhite.sessionId().equals(sessionId)) {
+    public boolean isPlayerInGame(UUID profileId) {
+        if (playerWhite != null && playerWhite.type()!=PlayerType.AI && playerWhite.profileId().equals(profileId)) {
             return true;
         }
-        if (playerBlack != null && playerBlack.sessionId().equals(sessionId)) {
+        if (playerBlack != null && playerBlack.type()!=PlayerType.AI && playerBlack.profileId().equals(profileId)) {
             return true;
         }
         return false;
+    }
+    public Player getPlayerById(UUID profileId) {
+        if (playerWhite != null && playerWhite.type()!=PlayerType.AI && playerWhite.profileId().equals(profileId)) {
+            return playerWhite;
+        }
+        if (playerBlack != null && playerBlack.type()!=PlayerType.AI && playerBlack.profileId().equals(profileId)) {
+            return playerBlack;
+        }
+        throw new IllegalStateException("Player is not in this game");
     }
 
     public void joinAsSecondPlayer(Player player) {
