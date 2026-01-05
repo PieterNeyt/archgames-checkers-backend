@@ -61,36 +61,36 @@ public class CheckersMessagePublisher {
                 new AchievementCommand(
                         UUID.randomUUID(),
                         "won_a_game_vs_ai",
-                        "AI Verslagen",
-                        "Je hebt een wedstrijd gewonnen tegen de AI. Netjes gespeeld!",
+                        "AI GOD",
+                        "you've won a match against AI, well done!",
                         "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
                 ),
                 new AchievementCommand(
                         UUID.randomUUID(),
                         "lost_a_game_vs_ai",
-                        "AI Was Te Sterk",
-                        "Je verloor een wedstrijd tegen de AI. Volgende keer beter!",
+                        "Machine superiority",
+                        "You've lost a match against AI... how?",
                         "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
                 ),
                 new AchievementCommand(
                         UUID.randomUUID(),
                         "lost_a_game",
-                        "Nederlaag",
-                        "Je hebt een wedstrijd verloren tegen een andere speler.",
+                        "Noob",
+                        "Congrats on losing your first game!",
                         "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
                 ),
                 new AchievementCommand(
                         UUID.randomUUID(),
                         "won_a_game",
-                        "Overwinning",
-                        "Gefeliciteerd! Je hebt een wedstrijd gewonnen.",
+                        "Unbeatable",
+                        "Congratulations! Youve won your first game",
                         "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
                 ),
                 new AchievementCommand(
                         UUID.randomUUID(),
                         "drew_a_game",
-                        "Gelijkspel",
-                        "De wedstrijd eindigde in een gelijkspel. Spannend tot het einde!",
+                        "Evenly matched",
+                        "This was surely an exiting game until the end! (drawn a game)",
                         "https://www.budgettrophy.com/media/catalog/product/S/L/SL1914_02.png"
                 )
         );
